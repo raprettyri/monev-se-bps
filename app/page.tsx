@@ -17,8 +17,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-
-// IMPORT UNTUK GRAFIK
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 
 const DAFTAR_KABKOTA = [
@@ -29,19 +27,21 @@ const DAFTAR_KABKOTA = [
   "Kota Langsa", "Kota Lhokseumawe", "Kota Subulussalam"
 ];
 
-// Array warna cerah dinamis untuk diagram (otomatis berulang)
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
 
-// Helper format angka ribuan
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
 
 export default function MonevApp() {
+  // --- STATE LOGIN ---
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [inputUsername, setInputUsername] = useState("")
+  const [inputPassword, setInputPassword] = useState("")
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [activeMenu, setActiveMenu] = useState("dashboard")
   const [viewDocument, setViewDocument] = useState<any>(null)
 
-  // --- States ---
+  // --- States CRUD ---
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" })
@@ -62,7 +62,9 @@ export default function MonevApp() {
   const [formMasuk, setFormMasuk] = useState({ id: "", noBast: "", tanggal: "", pengirim: "BPS Provinsi Aceh", barang: "", jumlah: "" })
   const [fileMasuk, setFileMasuk] = useState<File | null>(null)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    if (isLoggedIn) loadData()
+  }, [isLoggedIn])
 
   async function loadData() {
     try {
@@ -74,18 +76,27 @@ export default function MonevApp() {
     } catch (e) { console.error("Gagal load data:", e) }
   }
 
-  // --- LOGIKA DASHBOARD DINAMIS ---
-  // Mencari nama barang unik dari data Pembelian
+  // --- LOGIKA LOGIN ---
+  const handleLogin = () => {
+    // SILAKAN UBAH PASSWORD "bpsaceh2026" DI BAWAH INI SESUAI KEINGINANMU
+    if (inputUsername === "admin" && inputPassword === "bpsaceh2026") {
+      setIsLoggedIn(true)
+      setInputUsername("")
+      setInputPassword("")
+    } else {
+      alert("Username atau Password salah! Silakan coba lagi.")
+    }
+  }
+
+  // --- LOGIKA DASHBOARD ---
   const uniqueBarangMap = new Map();
   dataPembelian.forEach(item => {
     if (item.barang) {
       const key = item.barang.trim().toLowerCase();
-      // Menyimpan nama aslinya agar tetap rapi saat ditampilkan (cth: "Stiker Sensus")
       if (!uniqueBarangMap.has(key)) uniqueBarangMap.set(key, item.barang.trim());
     }
   });
 
-  // Membuat array stat data untuk masing-masing barang unik tersebut
   const dynamicStats = Array.from(uniqueBarangMap.entries()).map(([key, originalName]) => {
     const masuk = dataPembelian.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
     const pakai = dataPemakaian.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
@@ -147,14 +158,38 @@ export default function MonevApp() {
     } catch (error) { alert("Gagal simpan transfer masuk") }
   }
 
+  // --- HALAMAN LOGIN ---
   if (!isLoggedIn) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-100">
-        <Card className="w-[350px]">
-          <CardHeader><CardTitle>Login Monev-SE</CardTitle></CardHeader>
+        <Card className="w-[350px] shadow-lg border-t-4 border-t-blue-600">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-slate-800">MONEV-SE</CardTitle>
+            <p className="text-sm text-slate-500">Sensus Ekonomi BPS Aceh</p>
+          </CardHeader>
           <CardContent className="space-y-4">
-            <Input placeholder="Username" /><Input type="password" placeholder="Password" />
-            <Button className="w-full bg-blue-600" onClick={() => setIsLoggedIn(true)}>Masuk</Button>
+            <div className="space-y-2">
+              <Label>Username</Label>
+              <Input
+                placeholder="Masukkan username"
+                value={inputUsername}
+                onChange={(e) => setInputUsername(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Password</Label>
+              <Input
+                type="password"
+                placeholder="Masukkan kata sandi"
+                value={inputPassword}
+                onChange={(e) => setInputPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 mt-4" onClick={handleLogin}>
+              Masuk
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -164,7 +199,7 @@ export default function MonevApp() {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
 
-      {/* SIDEBAR DENGAN ANIMASI LEBAR (w-64 vs w-20) */}
+      {/* SIDEBAR */}
       <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col`}>
         <div className="p-4 border-b h-20 flex items-center justify-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
@@ -188,19 +223,17 @@ export default function MonevApp() {
           </button>
         </div>
         <div className="p-4 border-t">
-          <button onClick={() => setIsLoggedIn(false)} title="Keluar" className="flex items-center text-red-500 gap-3 p-2 w-full hover:bg-red-50 rounded-lg">
+          <button onClick={() => { setIsLoggedIn(false); setActiveMenu("dashboard"); }} title="Keluar" className="flex items-center text-red-500 gap-3 p-2 w-full hover:bg-red-50 rounded-lg">
             <div className="min-w-5"><LogOut size={20} /></div> {isSidebarOpen && <span className="whitespace-nowrap overflow-hidden">Keluar</span>}
           </button>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* HEADER DENGAN TOMBOL TOGGLE */}
+        {/* HEADER */}
         <header className="h-20 bg-white border-b flex items-center px-6 justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-slate-100 text-slate-600">
-              <Menu size={24} />
-            </button>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-slate-100 text-slate-600"><Menu size={24} /></button>
             <h1 className="text-xl font-bold text-slate-800 hidden sm:block">BPS PROVINSI ACEH</h1>
           </div>
           <div className="flex items-center gap-2 text-sm bg-slate-100 px-4 py-2 rounded-full"><User size={16} /> Admin</div>
@@ -208,7 +241,7 @@ export default function MonevApp() {
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#F4F7FB]">
 
-          {/* MENU DASHBOARD DINAMIS */}
+          {/* MENU DASHBOARD */}
           {activeMenu === "dashboard" && (
             <div className="space-y-6">
               <div>
@@ -225,11 +258,10 @@ export default function MonevApp() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {dynamicStats.map((stat, index) => {
-                    // Warna otomatis bergilir dari array CHART_COLORS
                     const colorPilih = CHART_COLORS[index % CHART_COLORS.length];
                     const chartData = [
-                      { name: 'Terdistribusi / Dipakai', value: stat.keluar, color: '#e2e8f0' }, // Abu-abu redup
-                      { name: 'Sisa Stock (Provinsi)', value: stat.sisa, color: colorPilih }     // Warna terang
+                      { name: 'Terdistribusi / Dipakai', value: stat.keluar, color: '#e2e8f0' },
+                      { name: 'Sisa Stock (Provinsi)', value: stat.sisa, color: colorPilih }
                     ];
 
                     return (
@@ -271,7 +303,7 @@ export default function MonevApp() {
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST</Label><Input value={formData.noBast} onChange={(e) => setFormData({...formData, noBast: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Tanggal BAST</Label><Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} /></div>
-                      <div className="grid gap-2"><Label>Nama Barang (Bebas)</Label><Input placeholder="Contoh: Meteran, Rompi, Stiker..." value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Meteran, Rompi, Stiker..." value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah Barang</Label><Input type="number" value={formData.jumlah} onChange={(e) => setFormData({...formData, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Penyedia</Label><Input value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Dokumen BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
@@ -311,7 +343,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Tanggal Pakai</Label><Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Pegawai</Label><Input value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Keperluan</Label><Input value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
-                      <div className="grid gap-2"><Label>Nama Barang (Sesuai di Pembelian)</Label><Input value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang</Label><Input value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formPemakaian.jumlah} onChange={(e) => setFormPemakaian({...formPemakaian, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Bon Pengambilan (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFilePemakaian(e.target.files?.[0] || null)} /></div>
                     </div>
@@ -347,7 +379,7 @@ export default function MonevApp() {
                   <DialogContent>
                     <DialogHeader><DialogTitle>{formTransfer.id ? "Edit" : "Tambah"} Transfer Keluar</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <div className="grid gap-2"><Label>No BAST</Label><Input placeholder="Nomor BAST Serah Terima" value={formTransfer.noBast} onChange={(e) => setFormTransfer({...formTransfer, noBast: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>No BAST</Label><Input value={formTransfer.noBast} onChange={(e) => setFormTransfer({...formTransfer, noBast: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Tanggal</Label><Input type="date" value={formTransfer.tanggal} onChange={(e) => setFormTransfer({...formTransfer, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2">
                         <Label>Tujuan (Kab/Kota)</Label>
@@ -356,7 +388,7 @@ export default function MonevApp() {
                           {DAFTAR_KABKOTA.map((kab) => (<option key={kab} value={kab}>{kab}</option>))}
                         </select>
                       </div>
-                      <div className="grid gap-2"><Label>Nama Barang (Sesuai di Pembelian)</Label><Input placeholder="Contoh: Rompi" value={formTransfer.barang} onChange={(e) => setFormTransfer({...formTransfer, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang</Label><Input value={formTransfer.barang} onChange={(e) => setFormTransfer({...formTransfer, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formTransfer.jumlah} onChange={(e) => setFormTransfer({...formTransfer, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2">
                         <Label>Status Pengiriman</Label>
