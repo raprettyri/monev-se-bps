@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pembelian {
+  id        String   @id @default(cuid())
+  noBast    String
+  tanggal   String
+  jumlah    Int
+  penyedia  String
+  dokumen   String
+  createdAt DateTime @default(now())
+}
