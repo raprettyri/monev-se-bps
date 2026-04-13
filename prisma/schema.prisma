@@ -20,9 +20,10 @@ model Pembelian {
 model Pemakaian {
   id        String   @id @default(cuid())
   tanggal   String
-  nama      String   // Nama pegawai yang memakai
-  kegiatan  String   // Untuk kegiatan apa (misal: Rapat Teknis SE)
-  barang    String   // Jenis barang (misal: Rompi, Tas, atau ATK)
+  nama      String
+  kegiatan  String
+  barang    String
   jumlah    Int
+  dokumen   String?
   createdAt DateTime @default(now())
 }
