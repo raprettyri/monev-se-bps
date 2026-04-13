@@ -63,27 +63,50 @@ export async function updatePembelian(id: string, formData: FormData) {
   revalidatePath("/")
 }
 
-// Tambahkan di actions.ts
-export async function getPemakaian() {
-  return await prisma.pemakaian.findMany({
-    orderBy: { createdAt: 'desc' }
-  })
-}
+export async function addPemakaian(formData: FormData) {
+  const file = formData.get("dokumen") as File;
+  let urlFile = "";
 
-export async function addPemakaian(data: any) {
+  if (file && file.size > 0) {
+    const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true });
+    urlFile = blob.url;
+  }
+
   await prisma.pemakaian.create({
     data: {
-      tanggal: data.tanggal,
-      nama: data.nama,
-      kegiatan: data.kegiatan,
-      barang: data.barang,
-      jumlah: parseInt(data.jumlah)
+      tanggal: formData.get("tanggal") as string,
+      nama: formData.get("nama") as string,
+      kegiatan: formData.get("kegiatan") as string,
+      barang: formData.get("barang") as string,
+      jumlah: parseInt(formData.get("jumlah") as string),
+      dokumen: urlFile
     }
   })
   revalidatePath("/")
 }
 
-export async function deletePemakaian(id: string) {
-  await prisma.pemakaian.delete({ where: { id } })
+export async function updatePemakaian(id: string, formData: FormData) {
+  const file = formData.get("dokumen") as File;
+  let urlFile = "";
+
+  if (file && file.size > 0) {
+    const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true });
+    urlFile = blob.url;
+  }
+
+  const dataToUpdate: any = {
+    tanggal: formData.get("tanggal") as string,
+    nama: formData.get("nama") as string,
+    kegiatan: formData.get("kegiatan") as string,
+    barang: formData.get("barang") as string,
+    jumlah: parseInt(formData.get("jumlah") as string),
+  };
+
+  if (urlFile) dataToUpdate.dokumen = urlFile;
+
+  await prisma.pemakaian.update({
+    where: { id },
+    data: dataToUpdate
+  })
   revalidatePath("/")
 }

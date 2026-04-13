@@ -1,15 +1,21 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { getPembelian, addPembelian, deletePembelian, getPemakaian, addPemakaian, deletePemakaian } from "./actions"
-import { Menu, LayoutDashboard, ShoppingCart, ArrowDownToLine, PackageMinus, ArrowUpFromLine, ChevronLeft, LogOut, User, Pencil, Trash2, FileText, ExternalLink } from "lucide-react"
+import {
+  getPembelian, addPembelian, deletePembelian, updatePembelian,
+  getPemakaian, addPemakaian, deletePemakaian, updatePemakaian
+} from "./actions"
+import {
+  Menu, LayoutDashboard, ShoppingCart, ArrowDownToLine,
+  PackageMinus, ArrowUpFromLine, ChevronLeft, LogOut,
+  User, Pencil, Trash2, FileText, ExternalLink
+} from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
 export default function MonevApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -26,7 +32,8 @@ export default function MonevApp() {
   // ================= STATE PEMAKAIAN =================
   const [dataPemakaian, setDataPemakaian] = useState<any[]>([])
   const [isDialogPemakaianOpen, setIsDialogPemakaianOpen] = useState(false)
-  const [formPemakaian, setFormPemakaian] = useState({ tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
+  const [formPemakaian, setFormPemakaian] = useState({ id: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
+  const [filePemakaian, setFilePemakaian] = useState<File | null>(null)
 
   useEffect(() => {
     loadData()
@@ -39,7 +46,7 @@ export default function MonevApp() {
     setDataPemakaian(pakai)
   }
 
-  // --- Handler Pembelian ---
+  // --- Handler Simpan Pembelian ---
   const handleSavePembelian = async () => {
     const dataToSend = new FormData()
     dataToSend.append("noBast", formData.noBast)
@@ -49,35 +56,53 @@ export default function MonevApp() {
     if (file) dataToSend.append("dokumen", file)
 
     try {
-      await addPembelian(dataToSend)
+      if (formData.id) {
+        await updatePembelian(formData.id, dataToSend)
+      } else {
+        await addPembelian(dataToSend)
+      }
       await loadData()
       setIsDialogOpen(false)
-      setFormData({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" })
-      setFile(null)
+      resetFormPembelian()
       alert("Data Pembelian Berhasil Disimpan!")
     } catch (error) {
       alert("Gagal simpan pembelian")
     }
   }
 
-  // --- Handler Pemakaian ---
+  // --- Handler Simpan Pemakaian ---
   const handleSavePemakaian = async () => {
+    const dataToSend = new FormData()
+    dataToSend.append("tanggal", formPemakaian.tanggal)
+    dataToSend.append("nama", formPemakaian.nama)
+    dataToSend.append("kegiatan", formPemakaian.kegiatan)
+    dataToSend.append("barang", formPemakaian.barang)
+    dataToSend.append("jumlah", formPemakaian.jumlah)
+    if (filePemakaian) dataToSend.append("dokumen", filePemakaian)
+
     try {
-      await addPemakaian(formPemakaian)
+      if (formPemakaian.id) {
+        await updatePemakaian(formPemakaian.id, dataToSend)
+      } else {
+        await addPemakaian(dataToSend)
+      }
       await loadData()
       setIsDialogPemakaianOpen(false)
-      setFormPemakaian({ tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
+      resetFormPemakaian()
       alert("Data Pemakaian Berhasil Disimpan!")
     } catch (error) {
       alert("Gagal simpan pemakaian")
     }
   }
 
-  const handleDeletePemakaian = async (id: string) => {
-    if(confirm("Hapus data pemakaian ini?")) {
-      await deletePemakaian(id)
-      await loadData()
-    }
+  const resetFormPembelian = () => {
+    setFormData({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" })
+    setFile(null)
+  }
+
+  const resetFormPemakaian = () => {
+    setFormPemakaian({ id: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
+    setFilePemakaian(null)
   }
 
   if (!isLoggedIn) {
@@ -104,10 +129,10 @@ export default function MonevApp() {
                 <CardTitle>Data Penerimaan (Provinsi)</CardTitle>
                 <CardDescription>Barang masuk dari penyedia pihak ketiga.</CardDescription>
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetFormPembelian(); }}>
                 <DialogTrigger asChild><Button className="bg-blue-600">+ Tambah Pembelian</Button></DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Tambah Pembelian</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{formData.id ? "Edit" : "Tambah"} Pembelian</DialogTitle></DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2"><Label>Nomor BAST</Label><Input value={formData.noBast} onChange={(e) => setFormData({...formData, noBast: e.target.value})} /></div>
                     <div className="grid gap-2"><Label>Tanggal</Label><Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} /></div>
@@ -136,7 +161,11 @@ export default function MonevApp() {
                       <TableCell className="text-center">
                         <Button variant="ghost" onClick={() => setViewDocument(item)}><FileText size={16} /></Button>
                       </TableCell>
-                      <TableCell className="text-right px-6">
+                      <TableCell className="text-right px-6 space-x-2">
+                        <Button variant="outline" size="icon" onClick={() => {
+                          setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, jumlah: item.jumlah.toString(), penyedia: item.penyedia });
+                          setIsDialogOpen(true);
+                        }}><Pencil size={16} className="text-amber-600" /></Button>
                         <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePembelian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
                       </TableCell>
                     </TableRow>
@@ -153,18 +182,19 @@ export default function MonevApp() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Pemakaian Internal (Provinsi)</CardTitle>
-                <CardDescription>Pencatatan barang yang digunakan pegawai BPS Provinsi Aceh.</CardDescription>
+                <CardDescription>Pencatatan barang logistik yang digunakan pegawai internal.</CardDescription>
               </div>
-              <Dialog open={isDialogPemakaianOpen} onOpenChange={setIsDialogPemakaianOpen}>
+              <Dialog open={isDialogPemakaianOpen} onOpenChange={(open) => { setIsDialogPemakaianOpen(open); if(!open) resetFormPemakaian(); }}>
                 <DialogTrigger asChild><Button className="bg-blue-600">+ Catat Pemakaian</Button></DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Form Pemakaian Barang</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{formPemakaian.id ? "Edit" : "Tambah"} Pemakaian</DialogTitle></DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2"><Label>Tanggal Pakai</Label><Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} /></div>
-                    <div className="grid gap-2"><Label>Nama Pegawai</Label><Input placeholder="Misal: Riska" value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} /></div>
-                    <div className="grid gap-2"><Label>Kegiatan</Label><Input placeholder="Misal: Rapat Teknis SE" value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
-                    <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Misal: Rompi" value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
+                    <div className="grid gap-2"><Label>Nama Pegawai</Label><Input value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} /></div>
+                    <div className="grid gap-2"><Label>Kegiatan</Label><Input value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
+                    <div className="grid gap-2"><Label>Nama Barang</Label><Input value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
                     <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formPemakaian.jumlah} onChange={(e) => setFormPemakaian({...formPemakaian, jumlah: e.target.value})} /></div>
+                    <div className="grid gap-2"><Label>Bon Pengambilan (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFilePemakaian(e.target.files?.[0] || null)} /></div>
                   </div>
                   <DialogFooter><Button onClick={handleSavePemakaian} className="bg-blue-600 w-full">Simpan Data</Button></DialogFooter>
                 </DialogContent>
@@ -174,31 +204,28 @@ export default function MonevApp() {
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableHead className="px-6">Tanggal</TableHead>
-                    <TableHead>Nama Pegawai</TableHead>
-                    <TableHead>Kegiatan</TableHead>
-                    <TableHead>Nama Barang</TableHead>
-                    <TableHead>Jumlah</TableHead>
-                    <TableHead className="text-right px-6">Aksi</TableHead>
+                    <TableHead className="px-6">Tanggal</TableHead><TableHead>Pegawai</TableHead><TableHead>Barang</TableHead><TableHead>Jumlah</TableHead><TableHead className="text-center">Bon</TableHead><TableHead className="text-right px-6">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dataPemakaian.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Belum ada data pemakaian.</TableCell></TableRow>
-                  ) : (
-                    dataPemakaian.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="px-6">{item.tanggal}</TableCell>
-                        <TableCell className="font-medium">{item.nama}</TableCell>
-                        <TableCell>{item.kegiatan}</TableCell>
-                        <TableCell>{item.barang}</TableCell>
-                        <TableCell>{item.jumlah} Unit</TableCell>
-                        <TableCell className="text-right px-6">
-                          <Button variant="outline" size="icon" onClick={() => handleDeletePemakaian(item.id)}><Trash2 size={16} className="text-red-600" /></Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  {dataPemakaian.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="px-6">{item.tanggal}</TableCell>
+                      <TableCell className="font-medium">{item.nama}</TableCell>
+                      <TableCell>{item.barang}</TableCell>
+                      <TableCell>{item.jumlah} Unit</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" onClick={() => setViewDocument(item)}><FileText size={16} /></Button>
+                      </TableCell>
+                      <TableCell className="text-right px-6 space-x-2">
+                        <Button variant="outline" size="icon" onClick={() => {
+                          setFormPemakaian({ id: item.id, tanggal: item.tanggal, nama: item.nama, kegiatan: item.kegiatan, barang: item.barang, jumlah: item.jumlah.toString() });
+                          setIsDialogPemakaianOpen(true);
+                        }}><Pencil size={16} className="text-amber-600" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePemakaian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -206,7 +233,7 @@ export default function MonevApp() {
         )
 
       default:
-        return <div className="p-8 text-center text-slate-500">Pilih menu untuk melihat data.</div>
+        return <div className="p-8 text-center text-slate-500">Pilih menu di samping.</div>
     }
   }
 
@@ -230,9 +257,9 @@ export default function MonevApp() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
-          <h1 className="text-xl font-bold text-slate-800">BPS PROVINSI ACEH</h1>
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">BPS PROVINSI ACEH</h1>
           <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-100 px-4 py-2 rounded-full">
-            <User size={16} /> Admin Logistik
+            <User size={16} /> {isSidebarOpen ? "Admin Logistik" : ""}
           </div>
         </header>
         <div className="flex-1 overflow-y-auto p-8 bg-[#F4F7FB]">
@@ -240,13 +267,12 @@ export default function MonevApp() {
         </div>
       </main>
 
-      {/* Modal View PDF */}
       <Dialog open={!!viewDocument} onOpenChange={() => setViewDocument(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Pratinjau Dokumen BAST</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Pratinjau Dokumen</DialogTitle></DialogHeader>
           <div className="flex flex-col items-center p-8 bg-slate-50 border-2 border-dashed rounded-lg">
             <FileText size={48} className="text-slate-400 mb-4" />
-            <p className="text-sm text-center mb-6">{viewDocument?.dokumen ? "File tersedia di Cloud Storage" : "Tidak ada file PDF"}</p>
+            <p className="text-sm text-center mb-6">{viewDocument?.dokumen ? "Dokumen tersedia di Cloud" : "Tidak ada file dokumen"}</p>
             {viewDocument?.dokumen && (
               <a href={viewDocument.dokumen} target="_blank" rel="noopener noreferrer" className="bg-blue-600 text-white px-6 py-2 rounded-md flex items-center gap-2">
                 <ExternalLink size={16} /> Buka PDF Asli
