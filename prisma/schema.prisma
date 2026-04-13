@@ -11,9 +11,10 @@ model Pembelian {
   id        String   @id @default(cuid())
   noBast    String
   tanggal   String
+  barang    String?
   jumlah    Int
   penyedia  String
-  dokumen   String
+  dokumen   String?
   createdAt DateTime @default(now())
 }
 

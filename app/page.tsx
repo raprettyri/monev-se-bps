@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-// Import semua fungsi dari actions.ts
 import {
   getPembelian, addPembelian, deletePembelian, updatePembelian,
   getPemakaian, addPemakaian, deletePemakaian, updatePemakaian
@@ -25,7 +24,7 @@ export default function MonevApp() {
   // --- State Pembelian ---
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" })
+  const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" })
   const [file, setFile] = useState<File | null>(null)
   const [viewDocument, setViewDocument] = useState<any>(null)
 
@@ -55,6 +54,7 @@ export default function MonevApp() {
     const dataToSend = new FormData()
     dataToSend.append("noBast", formData.noBast)
     dataToSend.append("tanggal", formData.tanggal)
+    dataToSend.append("barang", formData.barang)
     dataToSend.append("jumlah", formData.jumlah)
     dataToSend.append("penyedia", formData.penyedia)
     if (file) dataToSend.append("dokumen", file)
@@ -64,8 +64,7 @@ export default function MonevApp() {
       else await addPembelian(dataToSend)
       await loadData()
       setIsDialogOpen(false)
-      setFormData({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" })
-      setFile(null)
+      resetFormPembelian()
       alert("Berhasil simpan pembelian!")
     } catch (error) {
       alert("Gagal simpan pembelian")
@@ -87,8 +86,7 @@ export default function MonevApp() {
       else await addPemakaian(dataToSend)
       await loadData()
       setIsDialogPemakaianOpen(false)
-      setFormPemakaian({ id: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
-      setFilePemakaian(null)
+      resetFormPemakaian()
       alert("Berhasil simpan pemakaian!")
     } catch (error) {
       alert("Gagal simpan pemakaian")
@@ -111,17 +109,16 @@ export default function MonevApp() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Sidebar */}
       <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all flex flex-col`}>
         <div className="p-4 border-b h-20 flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
-          {isSidebarOpen && <span className="font-bold">MONEV-SE</span>}
+          {isSidebarOpen && <span className="font-bold text-slate-800">MONEV-SE</span>}
         </div>
         <div className="flex-1 py-4 px-3 flex flex-col gap-2">
-          <button onClick={() => setActiveMenu("pembelian")} className={`flex items-center p-3 rounded-lg ${activeMenu === "pembelian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          <button onClick={() => setActiveMenu("pembelian")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "pembelian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
             <ShoppingCart size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Pembelian</span>}
           </button>
-          <button onClick={() => setActiveMenu("pemakaian")} className={`flex items-center p-3 rounded-lg ${activeMenu === "pemakaian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          <button onClick={() => setActiveMenu("pemakaian")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "pemakaian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
             <PackageMinus size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Pemakaian</span>}
           </button>
         </div>
@@ -132,42 +129,51 @@ export default function MonevApp() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
-          <h1 className="text-xl font-bold">BPS PROVINSI ACEH</h1>
+          <h1 className="text-xl font-bold text-slate-800">BPS PROVINSI ACEH</h1>
           <div className="flex items-center gap-2 text-sm bg-slate-100 px-4 py-2 rounded-full"><User size={16} /> Admin</div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 bg-[#F4F7FB]">
           {activeMenu === "pembelian" ? (
-            <Card>
+            <Card className="shadow-sm border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between">
-                <div><CardTitle>Data Pembelian</CardTitle></div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <Button onClick={() => { resetFormPembelian(); setIsDialogOpen(true); }} className="bg-blue-600">+ Tambah</Button>
+                <div><CardTitle>Data Pembelian (Penerimaan)</CardTitle></div>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetFormPembelian(); }}>
+                  <DialogTrigger asChild><Button className="bg-blue-600">+ Tambah</Button></DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>{formData.id ? "Edit" : "Tambah"} Pembelian</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <Input placeholder="No BAST" value={formData.noBast} onChange={(e) => setFormData({...formData, noBast: e.target.value})} />
-                      <Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} />
-                      <Input type="number" placeholder="Jumlah" value={formData.jumlah} onChange={(e) => setFormData({...formData, jumlah: e.target.value})} />
-                      <Input placeholder="Penyedia" value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} />
-                      <Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                      <div className="grid gap-2"><Label>No BAST</Label><Input value={formData.noBast} onChange={(e) => setFormData({...formData, noBast: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Tanggal</Label><Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Jaket Sensus" value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formData.jumlah} onChange={(e) => setFormData({...formData, jumlah: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Penyedia</Label><Input value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>File BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
                     </div>
-                    <Button onClick={handleSavePembelian} className="bg-blue-600 w-full">Simpan</Button>
+                    <DialogFooter><Button onClick={handleSavePembelian} className="bg-blue-600 w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
               <Table>
-                <TableHeader><TableRow><TableHead>No BAST</TableHead><TableHead>Tanggal</TableHead><TableHead>Penyedia</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-slate-50">
+                  <TableRow>
+                    <TableHead className="px-6">No BAST</TableHead><TableHead>Barang</TableHead><TableHead>Jumlah</TableHead><TableHead>Penyedia</TableHead><TableHead className="text-center">File</TableHead><TableHead className="text-right px-6">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {dataPembelian.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.penyedia}</TableCell>
-                      <TableCell className="text-right space-x-2">
+                      <TableCell className="px-6">{item.noBast}</TableCell>
+                      <TableCell className="font-medium">{item.barang}</TableCell>
+                      <TableCell>{item.jumlah} Unit</TableCell>
+                      <TableCell>{item.penyedia}</TableCell>
+                      <TableCell className="text-center">
                         <Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} /></Button>
-                        <Button variant="outline" size="icon" onClick={() => { setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, jumlah: item.jumlah.toString(), penyedia: item.penyedia }); setIsDialogOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
+                      </TableCell>
+                      <TableCell className="text-right px-6 space-x-2">
+                        <Button variant="outline" size="icon" onClick={() => { setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, barang: item.barang || "", jumlah: item.jumlah.toString(), penyedia: item.penyedia }); setIsDialogOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
                         <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePembelian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
                       </TableCell>
                     </TableRow>
@@ -176,48 +182,44 @@ export default function MonevApp() {
               </Table>
             </Card>
           ) : (
-            <Card>
+            <Card className="shadow-sm border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between">
-                <div><CardTitle>Data Pemakaian</CardTitle></div>
-                <Dialog open={isDialogPemakaianOpen} onOpenChange={setIsDialogPemakaianOpen}>
-                  <Button onClick={() => { resetFormPemakaian(); setIsDialogPemakaianOpen(true); }} className="bg-blue-600">+ Tambah</Button>
+                <div><CardTitle>Data Pemakaian Internal</CardTitle></div>
+                <Dialog open={isDialogPemakaianOpen} onOpenChange={(open) => { setIsDialogPemakaianOpen(open); if(!open) resetFormPemakaian(); }}>
+                  <DialogTrigger asChild><Button className="bg-blue-600">+ Tambah</Button></DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>{formPemakaian.id ? "Edit" : "Tambah"} Pemakaian</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} />
-                      <Input placeholder="Nama Pegawai" value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} />
-                      <Input placeholder="Kegiatan" value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} />
-                      <Input placeholder="Barang" value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} />
-                      <Input type="number" placeholder="Jumlah" value={formPemakaian.jumlah} onChange={(e) => setFormPemakaian({...formPemakaian, jumlah: e.target.value})} />
-                      <Input type="file" accept=".pdf" onChange={(e) => setFilePemakaian(e.target.files?.[0] || null)} />
+                      <div className="grid gap-2"><Label>Tanggal Pakai</Label><Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Pegawai</Label><Input value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Kegiatan</Label><Input value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Barang</Label><Input value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formPemakaian.jumlah} onChange={(e) => setFormPemakaian({...formPemakaian, jumlah: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Bon Pengambilan (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFilePemakaian(e.target.files?.[0] || null)} /></div>
                     </div>
-                    <Button onClick={handleSavePemakaian} className="bg-blue-600 w-full">Simpan</Button>
+                    <DialogFooter><Button onClick={handleSavePemakaian} className="bg-blue-600 w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Barang</TableHead>
-                    {/* Tambahkan Head Jumlah jika belum ada */}
-                    <TableHead>Jumlah</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead className="px-6">Tanggal</TableHead><TableHead>Nama</TableHead><TableHead>Barang</TableHead><TableHead>Jumlah</TableHead><TableHead className="text-center">Bon</TableHead><TableHead className="text-right px-6">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dataPemakaian.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.tanggal}</TableCell>
+                      <TableCell className="px-6">{item.tanggal}</TableCell>
                       <TableCell className="font-medium">{item.nama}</TableCell>
                       <TableCell>{item.barang}</TableCell>
-                      {/* PASTIKAN BARIS INI ADA */}
                       <TableCell>{item.jumlah} Unit</TableCell>
-                      <TableCell className="text-right space-x-2">
+                      <TableCell className="text-center">
                         <Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} /></Button>
+                      </TableCell>
+                      <TableCell className="text-right px-6 space-x-2">
                         <Button variant="outline" size="icon" onClick={() => { setFormPemakaian({ id: item.id, tanggal: item.tanggal, nama: item.nama, kegiatan: item.kegiatan, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogPemakaianOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
-                        <Button variant="outline" size="icon" onClick={() => deletePemakaian(item.id).then(loadData)}><Trash2 size={16} className="text-red-600" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePemakaian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -228,13 +230,12 @@ export default function MonevApp() {
         </div>
       </main>
 
-      {/* View Document Dialog */}
       <Dialog open={!!viewDocument} onOpenChange={() => setViewDocument(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Pratinjau Dokumen</DialogTitle></DialogHeader>
           <div className="flex flex-col items-center p-8 bg-slate-50 border-2 border-dashed rounded-lg">
             <FileText size={48} className="text-slate-400 mb-4" />
-            <p className="text-sm mb-6">{viewDocument?.dokumen ? "Dokumen tersedia" : "Tidak ada file"}</p>
+            <p className="text-sm mb-6">{viewDocument?.dokumen ? "Dokumen tersedia di cloud" : "Tidak ada file"}</p>
             {viewDocument?.dokumen && (
               <a href={viewDocument.dokumen} target="_blank" rel="noopener noreferrer" className="bg-blue-600 text-white px-6 py-2 rounded-md flex items-center gap-2">
                 <ExternalLink size={16} /> Buka PDF Asli
@@ -246,9 +247,8 @@ export default function MonevApp() {
     </div>
   )
 
-  // Helper reset functions
   function resetFormPembelian() {
-    setFormData({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" });
+    setFormData({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" });
     setFile(null);
   }
   function resetFormPemakaian() {

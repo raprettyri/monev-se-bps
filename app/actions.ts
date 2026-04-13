@@ -24,6 +24,7 @@ export async function addPembelian(formData: FormData) {
     data: {
       noBast: formData.get("noBast") as string,
       tanggal: formData.get("tanggal") as string,
+      barang: formData.get("barang") as string,
       jumlah: parseInt(formData.get("jumlah") as string),
       penyedia: formData.get("penyedia") as string,
       dokumen: urlFile
@@ -47,6 +48,7 @@ export async function updatePembelian(id: string, formData: FormData) {
   const dataToUpdate: any = {
     noBast: formData.get("noBast") as string,
     tanggal: formData.get("tanggal") as string,
+    barang: formData.get("barang") as string,
     jumlah: parseInt(formData.get("jumlah") as string),
     penyedia: formData.get("penyedia") as string,
   };
@@ -56,8 +58,6 @@ export async function updatePembelian(id: string, formData: FormData) {
 }
 
 // ================= ACTIONS PEMAKAIAN =================
-
-// INI FUNGSI YANG TADI HILANG DI FILE KAMU
 export async function getPemakaian() {
   return await prisma.pemakaian.findMany({
     orderBy: { createdAt: 'desc' }
@@ -84,7 +84,6 @@ export async function addPemakaian(formData: FormData) {
   revalidatePath("/")
 }
 
-// INI JUGA TADI HILANG
 export async function deletePemakaian(id: string) {
   await prisma.pemakaian.delete({ where: { id } })
   revalidatePath("/")
