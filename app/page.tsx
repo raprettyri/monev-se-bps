@@ -31,10 +31,13 @@ const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#1
 
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
 
+// Font modern untuk memaksa browser tidak pakai Times New Roman
+const modernFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
+
 export default function MonevApp() {
   // --- STATE LOGIN & SESSION ---
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [isCheckingSession, setIsCheckingSession] = useState(true) // Mencegah kedip halaman login
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [inputUsername, setInputUsername] = useState("")
   const [inputPassword, setInputPassword] = useState("")
 
@@ -63,7 +66,6 @@ export default function MonevApp() {
   const [formMasuk, setFormMasuk] = useState({ id: "", noBast: "", tanggal: "", pengirim: "BPS Provinsi Aceh", barang: "", jumlah: "" })
   const [fileMasuk, setFileMasuk] = useState<File | null>(null)
 
-  // Cek Session saat pertama kali buka web
   useEffect(() => {
     const session = sessionStorage.getItem("appSession");
     if (session === "aktif") {
@@ -73,7 +75,6 @@ export default function MonevApp() {
     setIsCheckingSession(false);
   }, [])
 
-  // Otomatis load data jika sudah login
   useEffect(() => {
     if (isLoggedIn) loadData();
   }, [isLoggedIn])
@@ -90,10 +91,9 @@ export default function MonevApp() {
 
   // --- LOGIKA LOGIN ---
   const handleLogin = () => {
-    // Kunci masuk: admin / bpsaceh2026
     if (inputUsername.toLowerCase() === "admin" && inputPassword === "bpsaceh2026") {
       setIsLoggedIn(true)
-      sessionStorage.setItem("appSession", "aktif") // Simpan ke ingatan browser
+      sessionStorage.setItem("appSession", "aktif")
       setInputUsername("")
       setInputPassword("")
     } else {
@@ -103,7 +103,7 @@ export default function MonevApp() {
 
   const handleLogout = () => {
     setIsLoggedIn(false)
-    sessionStorage.removeItem("appSession") // Hapus ingatan saat logout
+    sessionStorage.removeItem("appSession")
     setActiveMenu("dashboard")
   }
 
@@ -173,18 +173,18 @@ export default function MonevApp() {
     } catch (error) { alert("Gagal simpan transfer masuk") }
   }
 
-  // --- TAMPILAN HALAMAN LOGIN SESUAI GAMBAR ---
-  if (isCheckingSession) return null; // Tunggu detik pertama untuk cek session
+  // --- TAMPILAN HALAMAN LOGIN ---
+  if (isCheckingSession) return null;
 
   if (!isLoggedIn) {
     return (
-      <div className="flex h-screen items-center justify-center font-sans" style={{ backgroundColor: "#D48B10" }}>
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: "#D48B10", fontFamily: modernFont }}>
         <div className="bg-white p-8 rounded-xl shadow-2xl w-[320px] sm:w-[380px] flex flex-col items-center">
-          {/* Logo BPS */}
+          {/* Logo BPS Menggunakan format .png agar lebih aman */}
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/2/28/Logo_Badan_Pusat_Statistik_%28BPS%29_Indonesia.svg"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Logo_Badan_Pusat_Statistik_%28BPS%29_Indonesia.svg/512px-Logo_Badan_Pusat_Statistik_%28BPS%29_Indonesia.svg.png"
             alt="Logo BPS"
-            className="h-20 mb-8"
+            className="h-20 mb-8 object-contain"
           />
 
           <div className="w-full space-y-5">
@@ -193,6 +193,7 @@ export default function MonevApp() {
               <Input
                 placeholder="USERNAME"
                 className="pl-10 text-sm h-10 border-slate-300 focus-visible:ring-[#2C415C]"
+                style={{ fontFamily: modernFont }}
                 value={inputUsername}
                 onChange={(e) => setInputUsername(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
@@ -205,14 +206,17 @@ export default function MonevApp() {
                 type="password"
                 placeholder="PASSWORD"
                 className="pl-10 text-sm h-10 border-slate-300 focus-visible:ring-[#2C415C]"
+                style={{ fontFamily: modernFont }}
                 value={inputPassword}
                 onChange={(e) => setInputPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
 
+            {/* Hanya Tombol Login yang Navy */}
             <Button
               className="w-full bg-[#2C415C] hover:bg-[#1a2839] text-white mt-4 font-semibold tracking-wider h-10"
+              style={{ fontFamily: modernFont }}
               onClick={handleLogin}
             >
               LOGIN
@@ -229,29 +233,29 @@ export default function MonevApp() {
 
   // --- TAMPILAN DASHBOARD APLIKASI ---
   return (
-    // font-sans antialiased memastikan font yang digunakan adalah font modern yang rapi
-    <div className="flex h-screen bg-[#D9D9D9] font-sans antialiased text-slate-800 overflow-hidden">
+    <div className="flex h-screen bg-[#D9D9D9] text-slate-800 overflow-hidden" style={{ fontFamily: modernFont }}>
 
       {/* SIDEBAR */}
       <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shadow-sm z-10`}>
         <div className="p-4 border-b h-20 flex items-center justify-center gap-3">
-          <div className="bg-[#2C415C] p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
+          <div className="bg-[#D48B10] p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
           {isSidebarOpen && <span className="font-bold text-[#2C415C] whitespace-nowrap overflow-hidden tracking-wide">MONEV-SE</span>}
         </div>
         <div className="flex-1 py-4 px-3 flex flex-col gap-2 overflow-y-auto">
-          <button onClick={() => setActiveMenu("dashboard")} title="Dashboard" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "dashboard" ? "bg-[#2C415C] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          {/* Semua menu navigasi aktif diubah warnanya jadi oranye #D48B10 */}
+          <button onClick={() => setActiveMenu("dashboard")} title="Dashboard" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "dashboard" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
             <div className="min-w-5"><PieChartIcon size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Dashboard</span>}
           </button>
-          <button onClick={() => setActiveMenu("pembelian")} title="Pembelian" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pembelian" ? "bg-[#2C415C] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          <button onClick={() => setActiveMenu("pembelian")} title="Pembelian" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pembelian" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
             <div className="min-w-5"><ShoppingCart size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Pembelian</span>}
           </button>
-          <button onClick={() => setActiveMenu("pemakaian")} title="Pemakaian Internal" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pemakaian" ? "bg-[#2C415C] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          <button onClick={() => setActiveMenu("pemakaian")} title="Pemakaian Internal" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pemakaian" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
             <div className="min-w-5"><PackageMinus size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Pemakaian Internal</span>}
           </button>
-          <button onClick={() => setActiveMenu("transfer")} title="Transfer Keluar" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "transfer" ? "bg-[#2C415C] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          <button onClick={() => setActiveMenu("transfer")} title="Transfer Keluar" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "transfer" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
             <div className="min-w-5"><ArrowUpFromLine size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Transfer Keluar</span>}
           </button>
-          <button onClick={() => setActiveMenu("masuk")} title="Transfer Masuk" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "masuk" ? "bg-[#2C415C] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+          <button onClick={() => setActiveMenu("masuk")} title="Transfer Masuk" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "masuk" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
             <div className="min-w-5"><ArrowDownToLine size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Transfer Masuk</span>}
           </button>
         </div>
@@ -333,8 +337,11 @@ export default function MonevApp() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div><CardTitle className="text-[#2C415C]">Data Pembelian (Penerimaan Provinsi)</CardTitle></div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetFormPembelian(); }}>
-                  <DialogTrigger asChild><Button className="bg-[#2C415C] hover:bg-[#1a2839] text-white">+ Tambah</Button></DialogTrigger>
-                  <DialogContent>
+                  <DialogTrigger asChild>
+                    {/* Tombol Aksi diubah menjadi Oranye */}
+                    <Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button>
+                  </DialogTrigger>
+                  <DialogContent style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formData.id ? "Edit" : "Tambah"} Pembelian</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST</Label><Input value={formData.noBast} onChange={(e) => setFormData({...formData, noBast: e.target.value})} /></div>
@@ -344,7 +351,8 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Nama Penyedia</Label><Input value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Dokumen BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
                     </div>
-                    <DialogFooter><Button onClick={handleSavePembelian} className="bg-[#2C415C] w-full hover:bg-[#1a2839]">Simpan</Button></DialogFooter>
+                    {/* Tombol Simpan diubah menjadi Oranye */}
+                    <DialogFooter><Button onClick={handleSavePembelian} className="bg-[#D48B10] hover:bg-[#b0730d] text-white w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -355,7 +363,8 @@ export default function MonevApp() {
                     {dataPembelian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell><TableCell>{item.penyedia}</TableCell>
-                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#2C415C]" /></Button></TableCell>
+                        {/* Ikon Dokumen jadi Oranye */}
+                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, barang: item.barang || "", jumlah: item.jumlah.toString(), penyedia: item.penyedia }); setIsDialogOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
                           <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePembelian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
@@ -374,8 +383,8 @@ export default function MonevApp() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div><CardTitle className="text-[#2C415C]">Data Pemakaian Internal</CardTitle></div>
                 <Dialog open={isDialogPemakaianOpen} onOpenChange={(open) => { setIsDialogPemakaianOpen(open); if(!open) resetFormPemakaian(); }}>
-                  <DialogTrigger asChild><Button className="bg-[#2C415C] hover:bg-[#1a2839] text-white">+ Tambah</Button></DialogTrigger>
-                  <DialogContent>
+                  <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
+                  <DialogContent style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formPemakaian.id ? "Edit" : "Tambah"} Pemakaian</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>Tanggal Pakai</Label><Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} /></div>
@@ -385,7 +394,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formPemakaian.jumlah} onChange={(e) => setFormPemakaian({...formPemakaian, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Bon Pengambilan (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFilePemakaian(e.target.files?.[0] || null)} /></div>
                     </div>
-                    <DialogFooter><Button onClick={handleSavePemakaian} className="bg-[#2C415C] w-full hover:bg-[#1a2839]">Simpan</Button></DialogFooter>
+                    <DialogFooter><Button onClick={handleSavePemakaian} className="bg-[#D48B10] hover:bg-[#b0730d] text-white w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -396,7 +405,7 @@ export default function MonevApp() {
                     {dataPemakaian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6">{item.tanggal}</TableCell><TableCell className="font-medium text-slate-700">{item.nama}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
-                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#2C415C]" /></Button></TableCell>
+                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormPemakaian({ id: item.id, tanggal: item.tanggal, nama: item.nama, kegiatan: item.kegiatan, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogPemakaianOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
                           <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePemakaian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
@@ -415,8 +424,8 @@ export default function MonevApp() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div><CardTitle className="text-[#2C415C]">Transfer Keluar (Distribusi)</CardTitle></div>
                 <Dialog open={isDialogTransferOpen} onOpenChange={(open) => { setIsDialogTransferOpen(open); if(!open) resetFormTransfer(); }}>
-                  <DialogTrigger asChild><Button className="bg-[#2C415C] hover:bg-[#1a2839] text-white">+ Tambah</Button></DialogTrigger>
-                  <DialogContent>
+                  <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
+                  <DialogContent style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formTransfer.id ? "Edit" : "Tambah"} Transfer Keluar</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST</Label><Input placeholder="Nomor BAST Serah Terima" value={formTransfer.noBast} onChange={(e) => setFormTransfer({...formTransfer, noBast: e.target.value})} /></div>
@@ -439,7 +448,7 @@ export default function MonevApp() {
                       </div>
                       <div className="grid gap-2"><Label>Dokumen BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFileTransfer(e.target.files?.[0] || null)} /></div>
                     </div>
-                    <DialogFooter><Button onClick={handleSaveTransfer} className="bg-[#2C415C] w-full hover:bg-[#1a2839]">Simpan</Button></DialogFooter>
+                    <DialogFooter><Button onClick={handleSaveTransfer} className="bg-[#D48B10] hover:bg-[#b0730d] text-white w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -453,7 +462,7 @@ export default function MonevApp() {
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.tujuan}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
                         <TableCell className="text-center"><span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.status === 'Diterima' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.status}</span></TableCell>
-                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#2C415C]" /></Button></TableCell>
+                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormTransfer({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, tujuan: item.tujuan, barang: item.barang, jumlah: item.jumlah.toString(), status: item.status }); setIsDialogTransferOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
                           <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deleteTransferKeluar(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
@@ -472,8 +481,8 @@ export default function MonevApp() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div><CardTitle className="text-[#2C415C]">Transfer Masuk (Penerimaan Sah)</CardTitle></div>
                 <Dialog open={isDialogMasukOpen} onOpenChange={(open) => { setIsDialogMasukOpen(open); if(!open) resetFormMasuk(); }}>
-                  <DialogTrigger asChild><Button className="bg-[#2C415C] hover:bg-[#1a2839] text-white">+ Tambah</Button></DialogTrigger>
-                  <DialogContent>
+                  <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
+                  <DialogContent style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formMasuk.id ? "Edit" : "Tambah"} Transfer Masuk</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST Resmi</Label><Input value={formMasuk.noBast} onChange={(e) => setFormMasuk({...formMasuk, noBast: e.target.value})} /></div>
@@ -483,7 +492,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Jumlah Diterima</Label><Input type="number" value={formMasuk.jumlah} onChange={(e) => setFormMasuk({...formMasuk, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFileMasuk(e.target.files?.[0] || null)} /></div>
                     </div>
-                    <DialogFooter><Button onClick={handleSaveMasuk} className="bg-[#2C415C] w-full hover:bg-[#1a2839]">Simpan</Button></DialogFooter>
+                    <DialogFooter><Button onClick={handleSaveMasuk} className="bg-[#D48B10] hover:bg-[#b0730d] text-white w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -494,7 +503,7 @@ export default function MonevApp() {
                     {dataMasuk.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.pengirim}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
-                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#2C415C]" /></Button></TableCell>
+                        <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormMasuk({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, pengirim: item.pengirim, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogMasukOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
                           <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deleteTransferMasuk(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
@@ -512,12 +521,16 @@ export default function MonevApp() {
 
       {/* VIEW DOKUMEN MODAL */}
       <Dialog open={!!viewDocument} onOpenChange={() => setViewDocument(null)}>
-        <DialogContent>
+        <DialogContent style={{ fontFamily: modernFont }}>
           <DialogHeader><DialogTitle>Pratinjau Dokumen</DialogTitle></DialogHeader>
-          <div className="flex flex-col items-center p-8 bg-slate-50 border-2 border-dashed rounded-lg">
-            <FileText size={48} className="text-[#2C415C] mb-4" />
-            <p className="text-sm mb-6 text-slate-600">{viewDocument?.dokumen ? "Dokumen tersedia di cloud" : "Tidak ada file PDF"}</p>
-            {viewDocument?.dokumen && (<a href={viewDocument.dokumen} target="_blank" rel="noopener noreferrer" className="bg-[#2C415C] hover:bg-[#1a2839] text-white px-6 py-2 rounded-md flex items-center gap-2 transition-colors"><ExternalLink size={16} /> Buka PDF Asli</a>)}
+          <div className="flex flex-col items-center p-8 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg">
+            <FileText size={48} className="text-[#D48B10] mb-4" />
+            <p className="text-sm mb-6 text-slate-600">{viewDocument?.dokumen ? "Dokumen tersedia di server cloud" : "Tidak ada file PDF terlampir"}</p>
+            {viewDocument?.dokumen && (
+              <a href={viewDocument.dokumen} target="_blank" rel="noopener noreferrer" className="bg-[#D48B10] hover:bg-[#b0730d] text-white px-6 py-2 rounded-md flex items-center gap-2 transition-colors shadow-md">
+                <ExternalLink size={16} /> Buka PDF Asli
+              </a>
+            )}
           </div>
         </DialogContent>
       </Dialog>
