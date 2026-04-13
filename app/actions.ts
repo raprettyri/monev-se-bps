@@ -62,3 +62,28 @@ export async function updatePembelian(id: string, formData: FormData) {
   })
   revalidatePath("/")
 }
+
+// Tambahkan di actions.ts
+export async function getPemakaian() {
+  return await prisma.pemakaian.findMany({
+    orderBy: { createdAt: 'desc' }
+  })
+}
+
+export async function addPemakaian(data: any) {
+  await prisma.pemakaian.create({
+    data: {
+      tanggal: data.tanggal,
+      nama: data.nama,
+      kegiatan: data.kegiatan,
+      barang: data.barang,
+      jumlah: parseInt(data.jumlah)
+    }
+  })
+  revalidatePath("/")
+}
+
+export async function deletePemakaian(id: string) {
+  await prisma.pemakaian.delete({ where: { id } })
+  revalidatePath("/")
+}
