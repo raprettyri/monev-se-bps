@@ -2,35 +2,44 @@
 
 import { PrismaClient } from "@prisma/client"
 import { revalidatePath } from "next/cache"
-import { put } from "@vercel/blob" // Import fungsi upload ke cloud
+import { put } from "@vercel/blob"
 
 const prisma = new PrismaClient()
 
-// ... fungsi getPembelian tetap sama ...
+// 1. Fungsi untuk mengambil data (Yang tadi dibilang hilang)
+export async function getPembelian() {
+  return await prisma.pembelian.findMany({
+    orderBy: { createdAt: 'desc' }
+  })
+}
 
+// 2. Fungsi untuk menambah data + Upload Cloud
 export async function addPembelian(formData: FormData) {
   const file = formData.get("dokumen") as File;
   let urlFile = "";
 
-  // PROSES UPLOAD KE CLOUD (Vercel Blob)
   if (file && file.size > 0) {
-    // Kita upload filenya dan Vercel akan kasih kita link URL
     const blob = await put(file.name, file, {
       access: 'public',
     });
-    urlFile = blob.url; // Link inilah yang akan kita simpan ke Database
+    urlFile = blob.url;
   }
 
-  // SIMPAN KE DATABASE NEON
   await prisma.pembelian.create({
     data: {
       noBast: formData.get("noBast") as string,
       tanggal: formData.get("tanggal") as string,
       jumlah: parseInt(formData.get("jumlah") as string),
       penyedia: formData.get("penyedia") as string,
-      dokumen: urlFile // Sekarang isinya link https://...
+      dokumen: urlFile
     }
   })
 
+  revalidatePath("/")
+}
+
+// 3. Fungsi untuk menghapus data (Yang tadi dibilang hilang juga)
+export async function deletePembelian(id: string) {
+  await prisma.pembelian.delete({ where: { id } })
   revalidatePath("/")
 }
