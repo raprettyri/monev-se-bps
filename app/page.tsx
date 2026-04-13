@@ -9,7 +9,7 @@ import {
 } from "./actions"
 import {
   LayoutDashboard, ShoppingCart, PackageMinus, LogOut,
-  User, Pencil, Trash2, FileText, ExternalLink, ArrowUpFromLine, ArrowDownToLine, PieChart as PieChartIcon
+  User, Pencil, Trash2, FileText, ExternalLink, ArrowUpFromLine, ArrowDownToLine, PieChart as PieChartIcon, Menu
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -29,27 +29,16 @@ const DAFTAR_KABKOTA = [
   "Kota Langsa", "Kota Lhokseumawe", "Kota Subulussalam"
 ];
 
-// DATA DUMMY DASHBOARD (Sesuai Gambar Excel)
-const dummyStiker = [
-  { name: 'Terdistribusi (Kab/Kota)', value: 1630670, color: '#3b82f6' }, // Biru
-  { name: 'Sisa Stock (Provinsi)', value: 181310, color: '#cbd5e1' }      // Abu-abu
-];
-const dummySpidol = [
-  { name: 'Terdistribusi (Kab/Kota)', value: 8552, color: '#10b981' },   // Hijau
-  { name: 'Sisa Stock (Provinsi)', value: 952, color: '#cbd5e1' }
-];
-const dummyRompi = [
-  { name: 'Terdistribusi (Kab/Kota)', value: 4489, color: '#f59e0b' },   // Kuning/Amber
-  { name: 'Sisa Stock (Provinsi)', value: 501, color: '#cbd5e1' }
-];
+// Array warna cerah dinamis untuk diagram (otomatis berulang)
+const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
 
-// Helper format angka ribuan (titik)
+// Helper format angka ribuan
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
 
 export default function MonevApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [activeMenu, setActiveMenu] = useState("dashboard") // Default menu sekarang Dashboard
+  const [activeMenu, setActiveMenu] = useState("dashboard")
   const [viewDocument, setViewDocument] = useState<any>(null)
 
   // --- States ---
@@ -85,7 +74,29 @@ export default function MonevApp() {
     } catch (e) { console.error("Gagal load data:", e) }
   }
 
-  // --- Handlers ---
+  // --- LOGIKA DASHBOARD DINAMIS ---
+  // Mencari nama barang unik dari data Pembelian
+  const uniqueBarangMap = new Map();
+  dataPembelian.forEach(item => {
+    if (item.barang) {
+      const key = item.barang.trim().toLowerCase();
+      // Menyimpan nama aslinya agar tetap rapi saat ditampilkan (cth: "Stiker Sensus")
+      if (!uniqueBarangMap.has(key)) uniqueBarangMap.set(key, item.barang.trim());
+    }
+  });
+
+  // Membuat array stat data untuk masing-masing barang unik tersebut
+  const dynamicStats = Array.from(uniqueBarangMap.entries()).map(([key, originalName]) => {
+    const masuk = dataPembelian.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
+    const pakai = dataPemakaian.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
+    const transfer = dataTransfer.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
+    const totalKeluar = pakai + transfer;
+    const sisa = masuk - totalKeluar;
+
+    return { name: originalName, masuk, keluar: totalKeluar, sisa: sisa > 0 ? sisa : 0 };
+  });
+
+  // --- Handlers CRUD ---
   const handleSavePembelian = async () => {
     const dataToSend = new FormData()
     dataToSend.append("noBast", formData.noBast); dataToSend.append("tanggal", formData.tanggal);
@@ -152,116 +163,99 @@ export default function MonevApp() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all flex flex-col`}>
-        <div className="p-4 border-b h-20 flex items-center gap-3">
+
+      {/* SIDEBAR DENGAN ANIMASI LEBAR (w-64 vs w-20) */}
+      <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col`}>
+        <div className="p-4 border-b h-20 flex items-center justify-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
-          {isSidebarOpen && <span className="font-bold text-slate-800">MONEV-SE</span>}
+          {isSidebarOpen && <span className="font-bold text-slate-800 whitespace-nowrap overflow-hidden">MONEV-SE</span>}
         </div>
-        <div className="flex-1 py-4 px-3 flex flex-col gap-2">
-          {/* MENU DASHBOARD */}
-          <button onClick={() => setActiveMenu("dashboard")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "dashboard" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-            <PieChartIcon size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Dashboard</span>}
+        <div className="flex-1 py-4 px-3 flex flex-col gap-2 overflow-y-auto">
+          <button onClick={() => setActiveMenu("dashboard")} title="Dashboard" className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "dashboard" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+            <div className="min-w-5"><PieChartIcon size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Dashboard</span>}
           </button>
-          <button onClick={() => setActiveMenu("pembelian")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "pembelian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-            <ShoppingCart size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Pembelian</span>}
+          <button onClick={() => setActiveMenu("pembelian")} title="Pembelian" className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "pembelian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+            <div className="min-w-5"><ShoppingCart size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Pembelian</span>}
           </button>
-          <button onClick={() => setActiveMenu("pemakaian")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "pemakaian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-            <PackageMinus size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Pemakaian</span>}
+          <button onClick={() => setActiveMenu("pemakaian")} title="Pemakaian Internal" className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "pemakaian" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+            <div className="min-w-5"><PackageMinus size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Pemakaian Internal</span>}
           </button>
-          <button onClick={() => setActiveMenu("transfer")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "transfer" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-            <ArrowUpFromLine size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Transfer Keluar</span>}
+          <button onClick={() => setActiveMenu("transfer")} title="Transfer Keluar" className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "transfer" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+            <div className="min-w-5"><ArrowUpFromLine size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Transfer Keluar</span>}
           </button>
-          <button onClick={() => setActiveMenu("masuk")} className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "masuk" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-            <ArrowDownToLine size={20} /> {isSidebarOpen && <span className="ml-3 font-medium">Transfer Masuk</span>}
+          <button onClick={() => setActiveMenu("masuk")} title="Transfer Masuk" className={`flex items-center w-full p-3 rounded-lg ${activeMenu === "masuk" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+            <div className="min-w-5"><ArrowDownToLine size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Transfer Masuk</span>}
           </button>
         </div>
         <div className="p-4 border-t">
-          <button onClick={() => setIsLoggedIn(false)} className="flex items-center text-red-500 gap-3 p-2 w-full hover:bg-red-50 rounded-lg">
-            <LogOut size={20} /> {isSidebarOpen && <span>Keluar</span>}
+          <button onClick={() => setIsLoggedIn(false)} title="Keluar" className="flex items-center text-red-500 gap-3 p-2 w-full hover:bg-red-50 rounded-lg">
+            <div className="min-w-5"><LogOut size={20} /></div> {isSidebarOpen && <span className="whitespace-nowrap overflow-hidden">Keluar</span>}
           </button>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
-          <h1 className="text-xl font-bold text-slate-800">BPS PROVINSI ACEH</h1>
+        {/* HEADER DENGAN TOMBOL TOGGLE */}
+        <header className="h-20 bg-white border-b flex items-center px-6 justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-slate-100 text-slate-600">
+              <Menu size={24} />
+            </button>
+            <h1 className="text-xl font-bold text-slate-800 hidden sm:block">BPS PROVINSI ACEH</h1>
+          </div>
           <div className="flex items-center gap-2 text-sm bg-slate-100 px-4 py-2 rounded-full"><User size={16} /> Admin</div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 bg-[#F4F7FB]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#F4F7FB]">
 
-          {/* MENU DASHBOARD (GRAFIK DONAT) */}
+          {/* MENU DASHBOARD DINAMIS */}
           {activeMenu === "dashboard" && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-2xl font-bold text-slate-800">Dashboard Visualisasi Logistik</h2>
-                <p className="text-slate-500">Pemantauan persediaan perlengkapan Sensus Ekonomi 2026</p>
+                <p className="text-slate-500">Angka dan diagram ter-update otomatis menyesuaikan jenis barang yang diinput.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* DONAT STIKER */}
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Stiker (pcs)</CardTitle>
-                    <p className="text-sm text-slate-500">Total Stock Awal: <b>{formatAngka(1811980)}</b></p>
-                  </CardHeader>
-                  <CardContent className="flex flex-col items-center">
-                    <div className="h-64 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={dummyStiker} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                            {dummyStiker.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
-                          </Pie>
-                          <Tooltip formatter={(value) => formatAngka(value as number)} />
-                          <Legend verticalAlign="bottom" height={36}/>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+              {dynamicStats.length === 0 ? (
+                <div className="p-12 text-center bg-white rounded-lg border-2 border-dashed border-slate-200">
+                  <PieChartIcon size={48} className="mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-medium text-slate-700">Belum Ada Data Pembelian</h3>
+                  <p className="text-slate-500">Input data di menu Pembelian terlebih dahulu untuk memunculkan grafik.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {dynamicStats.map((stat, index) => {
+                    // Warna otomatis bergilir dari array CHART_COLORS
+                    const colorPilih = CHART_COLORS[index % CHART_COLORS.length];
+                    const chartData = [
+                      { name: 'Terdistribusi / Dipakai', value: stat.keluar, color: '#e2e8f0' }, // Abu-abu redup
+                      { name: 'Sisa Stock (Provinsi)', value: stat.sisa, color: colorPilih }     // Warna terang
+                    ];
 
-                {/* DONAT SPIDOL */}
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Spidol (pcs)</CardTitle>
-                    <p className="text-sm text-slate-500">Total Stock Awal: <b>{formatAngka(9504)}</b></p>
-                  </CardHeader>
-                  <CardContent className="flex flex-col items-center">
-                    <div className="h-64 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={dummySpidol} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                            {dummySpidol.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
-                          </Pie>
-                          <Tooltip formatter={(value) => formatAngka(value as number)} />
-                          <Legend verticalAlign="bottom" height={36}/>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* DONAT ROMPI */}
-                <Card className="shadow-sm border-slate-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Rompi (pcs)</CardTitle>
-                    <p className="text-sm text-slate-500">Total Stock Awal: <b>{formatAngka(4990)}</b></p>
-                  </CardHeader>
-                  <CardContent className="flex flex-col items-center">
-                    <div className="h-64 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={dummyRompi} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                            {dummyRompi.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
-                          </Pie>
-                          <Tooltip formatter={(value) => formatAngka(value as number)} />
-                          <Legend verticalAlign="bottom" height={36}/>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    return (
+                      <Card key={index} className="shadow-sm border-slate-200">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg truncate" title={stat.name}>{stat.name}</CardTitle>
+                          <p className="text-sm text-slate-500">Total Stock Awal: <b>{formatAngka(stat.masuk)}</b></p>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center">
+                          <div className="h-64 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
+                                  {chartData.map((entry, idx) => (<Cell key={`cell-${idx}`} fill={entry.color} />))}
+                                </Pie>
+                                <Tooltip formatter={(value) => formatAngka(value as number)} />
+                                <Legend verticalAlign="bottom" height={36}/>
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -269,7 +263,7 @@ export default function MonevApp() {
           {activeMenu === "pembelian" && (
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between">
-                <div><CardTitle>Data Pembelian</CardTitle></div>
+                <div><CardTitle>Data Pembelian (Penerimaan Provinsi)</CardTitle></div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetFormPembelian(); }}>
                   <DialogTrigger asChild><Button className="bg-blue-600">+ Tambah</Button></DialogTrigger>
                   <DialogContent>
@@ -277,7 +271,7 @@ export default function MonevApp() {
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST</Label><Input value={formData.noBast} onChange={(e) => setFormData({...formData, noBast: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Tanggal BAST</Label><Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} /></div>
-                      <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Rompi Sensus" value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang (Bebas)</Label><Input placeholder="Contoh: Meteran, Rompi, Stiker..." value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah Barang</Label><Input type="number" value={formData.jumlah} onChange={(e) => setFormData({...formData, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Penyedia</Label><Input value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Dokumen BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
@@ -317,7 +311,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Tanggal Pakai</Label><Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Pegawai</Label><Input value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Keperluan</Label><Input value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
-                      <div className="grid gap-2"><Label>Nama Barang</Label><Input value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang (Sesuai di Pembelian)</Label><Input value={formPemakaian.barang} onChange={(e) => setFormPemakaian({...formPemakaian, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formPemakaian.jumlah} onChange={(e) => setFormPemakaian({...formPemakaian, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Bon Pengambilan (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFilePemakaian(e.target.files?.[0] || null)} /></div>
                     </div>
@@ -362,7 +356,7 @@ export default function MonevApp() {
                           {DAFTAR_KABKOTA.map((kab) => (<option key={kab} value={kab}>{kab}</option>))}
                         </select>
                       </div>
-                      <div className="grid gap-2"><Label>Barang</Label><Input placeholder="Contoh: Rompi" value={formTransfer.barang} onChange={(e) => setFormTransfer({...formTransfer, barang: e.target.value})} /></div>
+                      <div className="grid gap-2"><Label>Nama Barang (Sesuai di Pembelian)</Label><Input placeholder="Contoh: Rompi" value={formTransfer.barang} onChange={(e) => setFormTransfer({...formTransfer, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formTransfer.jumlah} onChange={(e) => setFormTransfer({...formTransfer, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2">
                         <Label>Status Pengiriman</Label>
