@@ -28,3 +28,13 @@ model Pemakaian {
   dokumen   String?
   createdAt DateTime @default(now())
 }
+
+model TransferKeluar {
+  id        String   @id @default(cuid())
+  tanggal   String
+  tujuan    String   // BPS Kabupaten/Kota Tujuan
+  barang    String
+  jumlah    Int
+  dokumen   String?  // File BAST Serah Terima
+  createdAt DateTime @default(now())
+}
