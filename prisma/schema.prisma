@@ -32,9 +32,10 @@ model Pemakaian {
 model TransferKeluar {
   id        String   @id @default(cuid())
   tanggal   String
-  tujuan    String   // BPS Kabupaten/Kota Tujuan
+  tujuan    String
   barang    String
   jumlah    Int
-  dokumen   String?  // File BAST Serah Terima
+  status    String   @default("Dikirim") // Tambahan kolom status
+  dokumen   String?
   createdAt DateTime @default(now())
 }
