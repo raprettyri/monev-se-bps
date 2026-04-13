@@ -31,11 +31,12 @@ model Pemakaian {
 
 model TransferKeluar {
   id        String   @id @default(cuid())
+  noBast    String
   tanggal   String
   tujuan    String
   barang    String
   jumlah    Int
-  status    String   @default("Dikirim") // Tambahan kolom status
+  status    String   @default("Dikirim")
   dokumen   String?
   createdAt DateTime @default(now())
 }

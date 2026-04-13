@@ -53,11 +53,12 @@ export async function addTransferKeluar(formData: FormData) {
   let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
   await prisma.transferKeluar.create({ data: {
+      noBast: formData.get("noBast") as string, // Tangkap noBast
       tanggal: formData.get("tanggal") as string,
       tujuan: formData.get("tujuan") as string,
       barang: formData.get("barang") as string,
       jumlah: parseInt(formData.get("jumlah") as string),
-      status: formData.get("status") as string || "Dikirim", // Tangkap status
+      status: formData.get("status") as string || "Dikirim",
       dokumen: urlFile
     } })
   revalidatePath("/")
@@ -68,11 +69,12 @@ export async function updateTransferKeluar(id: string, formData: FormData) {
   let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
   const dataToUpdate: any = {
+    noBast: formData.get("noBast") as string, // Tangkap noBast
     tanggal: formData.get("tanggal") as string,
     tujuan: formData.get("tujuan") as string,
     barang: formData.get("barang") as string,
     jumlah: parseInt(formData.get("jumlah") as string),
-    status: formData.get("status") as string // Tangkap status
+    status: formData.get("status") as string
   };
   if (urlFile) dataToUpdate.dokumen = urlFile;
   await prisma.transferKeluar.update({ where: { id }, data: dataToUpdate })
