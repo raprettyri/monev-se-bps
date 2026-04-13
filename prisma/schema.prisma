@@ -40,3 +40,14 @@ model TransferKeluar {
   dokumen   String?
   createdAt DateTime @default(now())
 }
+
+model TransferMasuk {
+  id        String   @id @default(cuid())
+  noBast    String   // Nomor BAST yang sudah ttd 2 pihak
+  tanggal   String
+  pengirim  String   // Misal: BPS Provinsi Aceh
+  barang    String
+  jumlah    Int
+  dokumen   String?  // Surat Pengantar / BAST ttd 2 pihak
+  createdAt DateTime @default(now())
+}
