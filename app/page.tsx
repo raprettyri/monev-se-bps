@@ -45,7 +45,6 @@ export default function MonevApp() {
   }
 
   const handleSave = async () => {
-    // Tombol sekarang pasti bereaksi
     const dataToSend = new FormData()
     dataToSend.append("noBast", formData.noBast)
     dataToSend.append("tanggal", formData.tanggal)
@@ -55,9 +54,13 @@ export default function MonevApp() {
 
     try {
       if (formData.id) {
-        alert("Fitur update akan segera datang, sementara silakan hapus dan buat baru.")
+        // Memanggil fungsi update yang baru kita buat
+        const { updatePembelian } = await import("./actions")
+        await updatePembelian(formData.id, dataToSend)
+        alert("Data Berhasil Diperbarui!")
       } else {
         await addPembelian(dataToSend)
+        alert("Data Berhasil Ditambahkan!")
       }
       await loadData()
       setIsDialogOpen(false)
