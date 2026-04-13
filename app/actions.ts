@@ -43,3 +43,33 @@ export async function deletePembelian(id: string) {
   await prisma.pembelian.delete({ where: { id } })
   revalidatePath("/")
 }
+
+// 4. Fungsi untuk mengupdate data + Upload Cloud
+export async function updatePembelian(id: string, formData: FormData) {
+  const file = formData.get("dokumen") as File;
+  let urlFile = "";
+
+  // Jika ada upload file baru saat edit, kirim ke cloud
+  if (file && file.size > 0) {
+    const blob = await put(file.name, file, {
+      access: 'public',
+      addRandomSuffix: true,
+    });
+    urlFile = blob.url;
+  }
+
+  // Update data di database
+  await prisma.pembelian.update({
+    where: { id },
+    data: {
+      noBast: formData.get("noBast") as string,
+      tanggal: formData.get("tanggal") as string,
+      jumlah: parseInt(formData.get("jumlah") as string),
+      penyedia: formData.get("penyedia") as string,
+      // Hanya update dokumen jika ada file baru yang diunggah
+      ...(urlFile && { dokumen: urlFile })
+    }
+  })
+
+  revalidatePath("/")
+}
