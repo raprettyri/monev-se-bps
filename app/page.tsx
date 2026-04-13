@@ -196,15 +196,28 @@ export default function MonevApp() {
                 </Dialog>
               </CardHeader>
               <Table>
-                <TableHeader><TableRow><TableHead>Tanggal</TableHead><TableHead>Nama</TableHead><TableHead>Barang</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Barang</TableHead>
+                    {/* Tambahkan Head Jumlah jika belum ada */}
+                    <TableHead>Jumlah</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {dataPemakaian.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.tanggal}</TableCell><TableCell>{item.nama}</TableCell><TableCell>{item.barang}</TableCell>
+                      <TableCell>{item.tanggal}</TableCell>
+                      <TableCell className="font-medium">{item.nama}</TableCell>
+                      <TableCell>{item.barang}</TableCell>
+                      {/* PASTIKAN BARIS INI ADA */}
+                      <TableCell>{item.jumlah} Unit</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} /></Button>
                         <Button variant="outline" size="icon" onClick={() => { setFormPemakaian({ id: item.id, tanggal: item.tanggal, nama: item.nama, kegiatan: item.kegiatan, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogPemakaianOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
-                        <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePemakaian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => deletePemakaian(item.id).then(loadData)}><Trash2 size={16} className="text-red-600" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
