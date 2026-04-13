@@ -1,13 +1,17 @@
 "use server"
 
 import { PrismaClient } from "@prisma/client"
-import { revalidatePath } from "next/cache"
+// Tambahkan unstable_noStore di baris ini
+import { revalidatePath, unstable_noStore as noStore } from "next/cache"
 import { put } from "@vercel/blob"
 
 const prisma = new PrismaClient()
 
 // ================= ACTIONS PEMBELIAN =================
-export async function getPembelian() { return await prisma.pembelian.findMany({ orderBy: { createdAt: 'desc' } }) }
+export async function getPembelian() {
+  noStore(); // <--- Mantra penangkal cache
+  return await prisma.pembelian.findMany({ orderBy: { createdAt: 'desc' } })
+}
 export async function addPembelian(formData: FormData) {
   const file = formData.get("dokumen") as File;
   let urlFile = "";
@@ -27,7 +31,10 @@ export async function updatePembelian(id: string, formData: FormData) {
 }
 
 // ================= ACTIONS PEMAKAIAN =================
-export async function getPemakaian() { return await prisma.pemakaian.findMany({ orderBy: { createdAt: 'desc' } }) }
+export async function getPemakaian() {
+  noStore(); // <--- Mantra penangkal cache
+  return await prisma.pemakaian.findMany({ orderBy: { createdAt: 'desc' } })
+}
 export async function addPemakaian(formData: FormData) {
   const file = formData.get("dokumen") as File;
   let urlFile = "";
@@ -47,7 +54,10 @@ export async function updatePemakaian(id: string, formData: FormData) {
 }
 
 // ================= ACTIONS TRANSFER KELUAR =================
-export async function getTransferKeluar() { return await prisma.transferKeluar.findMany({ orderBy: { createdAt: 'desc' } }) }
+export async function getTransferKeluar() {
+  noStore(); // <--- Mantra penangkal cache
+  return await prisma.transferKeluar.findMany({ orderBy: { createdAt: 'desc' } })
+}
 export async function addTransferKeluar(formData: FormData) {
   const file = formData.get("dokumen") as File;
   let urlFile = "";
