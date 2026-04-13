@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { getPembelian, addPembelian, deletePembelian } from "./actions"
-import { Menu, LayoutDashboard, ShoppingCart, ArrowDownToLine, PackageMinus, ArrowUpFromLine, ChevronLeft, LogOut, User, Pencil, Trash2, FileText } from "lucide-react"
+import { Menu, LayoutDashboard, ShoppingCart, ArrowDownToLine, PackageMinus, ArrowUpFromLine, ChevronLeft, LogOut, User, Pencil, Trash2, FileText, ExternalLink } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,14 +14,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 export default function MonevApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const [activeMenu, setActiveMenu] = useState("pembelian") // Langsung buka menu pembelian
+  const [activeMenu, setActiveMenu] = useState("pembelian")
 
-  // ================= STATE UNTUK PEMBELIAN (DATABASE) =================
+  // ================= STATE UNTUK PEMBELIAN =================
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "", dokumen: "" })
+  const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" })
+  const [file, setFile] = useState<File | null>(null) // State baru untuk nampung file
   const [viewDocument, setViewDocument] = useState<any>(null)
-  // Ambil data dari database saat pertama kali halaman dimuat
+
   useEffect(() => {
     async function loadData() {
       const data = await getPembelian()
@@ -34,39 +35,51 @@ export default function MonevApp() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  // Fungsi Simpan ke Database
+  // Menangkap file PDF saat dipilih
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0])
+    }
+  }
+
   const handleSave = async () => {
+    const dataToSend = new FormData()
+    dataToSend.append("noBast", formData.noBast)
+    dataToSend.append("tanggal", formData.tanggal)
+    dataToSend.append("jumlah", formData.jumlah)
+    dataToSend.append("penyedia", formData.penyedia)
+
+    // Jika ada file, masukkan ke dalam FormData
+    if (file) {
+      dataToSend.append("dokumen", file)
+    }
+
     if (formData.id) {
       console.log("Fitur ubah ke DB akan disambung nanti")
     } else {
-      await addPembelian(formData) // Kirim ke Neon.tech
+      // Sekarang kirim FormData, bukan object biasa
+      await addPembelian(dataToSend)
     }
 
-    // Tarik data terbaru untuk menyegarkan tabel
     const updatedData = await getPembelian()
     setDataPembelian(updatedData)
     setIsDialogOpen(false)
     resetForm()
   }
 
-  // Fungsi Hapus dari Database
   const handleDelete = async (id: string) => {
     if(confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      await deletePembelian(id) // Hapus dari Neon.tech
+      await deletePembelian(id)
       const updatedData = await getPembelian()
       setDataPembelian(updatedData)
     }
   }
 
-  const handleEdit = (item: any) => {
-    setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, jumlah: item.jumlah.toString(), penyedia: item.penyedia, dokumen: item.dokumen })
-    setIsDialogOpen(true)
-  }
-
   const resetForm = () => {
-    setFormData({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "", dokumen: "" })
+    setFormData({ id: "", noBast: "", tanggal: "", jumlah: "", penyedia: "" })
+    setFile(null)
   }
-  // ================= END STATE PEMBELIAN =================
+  // ================= END STATE =================
 
   if (!isLoggedIn) {
     return (
@@ -86,13 +99,9 @@ export default function MonevApp() {
     )
   }
 
-  // --- Data Dummy untuk Chart ---
-  const totalMasuk = 150
-  const totalKeluar = 50
-  const sisaStok = totalMasuk - totalKeluar
   const chartData = [
-    { name: 'Sisa Stok', value: sisaStok, color: '#2563eb' },
-    { name: 'Terpakai/Keluar', value: totalKeluar, color: '#cbd5e1' },
+    { name: 'Sisa Stok', value: 100, color: '#2563eb' },
+    { name: 'Terpakai/Keluar', value: 50, color: '#cbd5e1' },
   ]
 
   const renderContent = () => {
@@ -114,7 +123,6 @@ export default function MonevApp() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
-                  <p className="text-center mt-4 font-semibold text-blue-700">Sisa Stok Saat Ini: {sisaStok} Unit</p>
                 </CardContent>
               </Card>
             </div>
@@ -135,14 +143,18 @@ export default function MonevApp() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>{formData.id ? "Ubah Data Pembelian" : "Tambah Data Pembelian"}</DialogTitle>
+                    <DialogTitle>Tambah Data Pembelian</DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2"><Label>Nomor BAST</Label><Input name="noBast" value={formData.noBast} onChange={handleInputChange} /></div>
                     <div className="grid gap-2"><Label>Tanggal BAST</Label><Input name="tanggal" type="date" value={formData.tanggal} onChange={handleInputChange} /></div>
                     <div className="grid gap-2"><Label>Jumlah Barang</Label><Input name="jumlah" type="number" value={formData.jumlah} onChange={handleInputChange} /></div>
                     <div className="grid gap-2"><Label>Nama Penyedia</Label><Input name="penyedia" value={formData.penyedia} onChange={handleInputChange} /></div>
-                    <div className="grid gap-2"><Label>Upload Dokumen</Label><Input type="file" /></div>
+                    <div className="grid gap-2">
+                      <Label>Upload Dokumen PDF</Label>
+                      {/* INPUT FILE SEKARANG PUNYA ONCHANGE */}
+                      <Input type="file" accept=".pdf" onChange={handleFileChange} />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
@@ -150,24 +162,32 @@ export default function MonevApp() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
               <Dialog open={!!viewDocument} onOpenChange={(open) => { if(!open) setViewDocument(null) }}>
                 <DialogContent className="sm:max-w-[500px]">
                   <DialogHeader>
-                    <DialogTitle>Pratinjau Dokumen</DialogTitle>
-                    <CardDescription>Nomor BAST: {viewDocument?.noBast}</CardDescription>
+                    <DialogTitle>Pratinjau Dokumen BAST</DialogTitle>
+                    <CardDescription>Penyedia: {viewDocument?.penyedia}</CardDescription>
                   </DialogHeader>
                   <div className="flex flex-col items-center justify-center p-8 mt-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg">
                     <FileText size={64} className="text-slate-400 mb-4" />
-                    <p className="font-semibold text-slate-700 text-lg">{viewDocument?.dokumen || "Dokumen_BAST.pdf"}</p>
-                    <p className="text-sm text-slate-500 mt-1">Penyedia: {viewDocument?.penyedia}</p>
+                    <p className="font-semibold text-slate-700 text-center break-all text-sm">
+                      {viewDocument?.dokumen ? "Dokumen Tersimpan di Cloud" : "Tidak ada file"}
+                    </p>
 
-                    <div className="mt-6 p-3 bg-blue-50 text-blue-700 text-sm rounded-md w-full text-center border border-blue-100">
-                      Karena masih menggunakan server lokal, pratinjau PDF asli belum ditampilkan. Di versi *production*, PDF akan muncul di sini.
-                    </div>
+                    {viewDocument?.dokumen && (
+                      <a
+                        href={viewDocument.dokumen}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-6 flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors font-medium text-sm"
+                      >
+                        <ExternalLink size={16} className="mr-2" /> Buka Dokumen Asli
+                      </a>
+                    )}
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setViewDocument(null)}>Tutup</Button>
-                    <Button className="bg-blue-600">Unduh Berkas</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -200,8 +220,7 @@ export default function MonevApp() {
                             <FileText size={16} className="mr-2"/> Lihat
                           </Button>
                         </TableCell>
-                        <TableCell className="text-right px-6 space-x-2">
-                          <Button variant="outline" size="icon" onClick={() => handleEdit(item)}><Pencil size={16} className="text-amber-600" /></Button>
+                        <TableCell className="text-right px-6">
                           <Button variant="outline" size="icon" onClick={() => handleDelete(item.id)}><Trash2 size={16} className="text-red-600" /></Button>
                         </TableCell>
                       </TableRow>
@@ -217,6 +236,7 @@ export default function MonevApp() {
     }
   }
 
+  // --- Layout Sidebar Tetap Sama ---
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <aside className={`${isSidebarOpen ? "w-64" : "w-0 sm:w-20"} bg-white border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col relative`}>

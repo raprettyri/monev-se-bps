@@ -2,30 +2,35 @@
 
 import { PrismaClient } from "@prisma/client"
 import { revalidatePath } from "next/cache"
+import { put } from "@vercel/blob" // Import fungsi upload ke cloud
 
-// Koneksi standar yang langsung jalan!
 const prisma = new PrismaClient()
 
-export async function getPembelian() {
-  return await prisma.pembelian.findMany({
-    orderBy: { createdAt: 'desc' }
-  })
-}
+// ... fungsi getPembelian tetap sama ...
 
-export async function addPembelian(formData: any) {
+export async function addPembelian(formData: FormData) {
+  const file = formData.get("dokumen") as File;
+  let urlFile = "";
+
+  // PROSES UPLOAD KE CLOUD (Vercel Blob)
+  if (file && file.size > 0) {
+    // Kita upload filenya dan Vercel akan kasih kita link URL
+    const blob = await put(file.name, file, {
+      access: 'public',
+    });
+    urlFile = blob.url; // Link inilah yang akan kita simpan ke Database
+  }
+
+  // SIMPAN KE DATABASE NEON
   await prisma.pembelian.create({
     data: {
-      noBast: formData.noBast,
-      tanggal: formData.tanggal,
-      jumlah: parseInt(formData.jumlah),
-      penyedia: formData.penyedia,
-      dokumen: "File_Tersimpan.pdf"
+      noBast: formData.get("noBast") as string,
+      tanggal: formData.get("tanggal") as string,
+      jumlah: parseInt(formData.get("jumlah") as string),
+      penyedia: formData.get("penyedia") as string,
+      dokumen: urlFile // Sekarang isinya link https://...
     }
   })
-  revalidatePath("/")
-}
 
-export async function deletePembelian(id: string) {
-  await prisma.pembelian.delete({ where: { id } })
   revalidatePath("/")
 }
