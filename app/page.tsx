@@ -9,7 +9,9 @@ import {
 } from "./actions"
 import {
   LayoutDashboard, ShoppingCart, PackageMinus, LogOut,
-  User, Pencil, Trash2, FileText, ExternalLink, ArrowUpFromLine, ArrowDownToLine, PieChart as PieChartIcon, Menu, Lock
+  User, Pencil, Trash2, FileText, ExternalLink, ArrowUpFromLine,
+  ArrowDownToLine, PieChart as PieChartIcon, Menu, Lock,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,7 +33,6 @@ const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#1
 
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
 
-// Memaksa penggunaan font modern bawaan sistem
 const modernFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
 
 export default function MonevApp() {
@@ -43,6 +44,8 @@ export default function MonevApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [activeMenu, setActiveMenu] = useState("dashboard")
   const [viewDocument, setViewDocument] = useState<any>(null)
+
+  const [sortConfig, setSortConfig] = useState<{ key: string | null, direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -72,6 +75,8 @@ export default function MonevApp() {
 
   useEffect(() => { if (isLoggedIn) loadData(); }, [isLoggedIn])
 
+  useEffect(() => { setSortConfig({ key: null, direction: 'asc' }) }, [activeMenu])
+
   async function loadData() {
     try {
       const [beli, pakai, transferOut, transferIn] = await Promise.all([
@@ -93,6 +98,33 @@ export default function MonevApp() {
     setIsLoggedIn(false); sessionStorage.removeItem("appSession"); setActiveMenu("dashboard");
   }
 
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  }
+
+  const getSortIcon = (columnName: string) => {
+    if (sortConfig.key !== columnName) return <ArrowUpDown size={14} className="ml-1 opacity-40 inline-block" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="ml-1 text-[#D48B10] inline-block" /> : <ArrowDown size={14} className="ml-1 text-[#D48B10] inline-block" />;
+  }
+
+  const getSortedData = (data: any[]) => {
+    if (!sortConfig.key) return data;
+    return [...data].sort((a, b) => {
+      const aValue = a[sortConfig.key!]?.toString().toLowerCase() || '';
+      const bValue = b[sortConfig.key!]?.toString().toLowerCase() || '';
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const sortedPembelian = getSortedData(dataPembelian);
+  const sortedPemakaian = getSortedData(dataPemakaian);
+  const sortedTransfer = getSortedData(dataTransfer);
+  const sortedMasuk = getSortedData(dataMasuk);
+
   const uniqueBarangMap = new Map();
   dataPembelian.forEach(item => {
     if (item.barang) {
@@ -109,7 +141,6 @@ export default function MonevApp() {
     return { name: originalName, masuk, keluar: totalKeluar, sisa: sisa > 0 ? sisa : 0 };
   });
 
-  // --- Handlers CRUD ---
   const handleSavePembelian = async () => {
     const dataToSend = new FormData(); dataToSend.append("noBast", formData.noBast); dataToSend.append("tanggal", formData.tanggal); dataToSend.append("barang", formData.barang); dataToSend.append("jumlah", formData.jumlah); dataToSend.append("penyedia", formData.penyedia); if (file) dataToSend.append("dokumen", file);
     try { if (formData.id) await updatePembelian(formData.id, dataToSend); else await addPembelian(dataToSend); await loadData(); setIsDialogOpen(false); resetFormPembelian(); alert("Berhasil simpan pembelian!") } catch (error) { alert("Gagal simpan pembelian") }
@@ -128,14 +159,12 @@ export default function MonevApp() {
     try { if (formMasuk.id) await updateTransferMasuk(formMasuk.id, dataToSend); else await addTransferMasuk(dataToSend); await loadData(); setIsDialogMasukOpen(false); resetFormMasuk(); alert("Berhasil simpan penerimaan barang!") } catch (error) { alert("Gagal simpan transfer masuk") }
   }
 
-  // --- HALAMAN LOGIN ---
   if (isCheckingSession) return null;
 
   if (!isLoggedIn) {
     return (
       <div className="flex h-screen items-center justify-center" style={{ backgroundColor: "#D48B10", fontFamily: modernFont }}>
         <div className="bg-white p-8 rounded-xl shadow-2xl w-[320px] sm:w-[380px] flex flex-col items-center">
-          {/* Logo BPS sekarang memanggil file lokal di public/logo-bps.png */}
           <img src="/logo-bps.png" alt="Logo BPS" className="h-20 mb-8 object-contain" />
           <div className="w-full space-y-5">
             <div className="relative">
@@ -156,11 +185,9 @@ export default function MonevApp() {
     )
   }
 
-  // --- TAMPILAN DASHBOARD APLIKASI ---
   return (
     <div className="flex h-screen bg-[#D9D9D9] text-slate-800 overflow-hidden" style={{ fontFamily: modernFont }}>
 
-      {/* SIDEBAR */}
       <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shadow-sm z-30`}>
         <div className="p-4 border-b h-20 flex items-center justify-center gap-3">
           <div className="bg-[#D48B10] p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
@@ -191,7 +218,6 @@ export default function MonevApp() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        {/* HEADER */}
         <header className="h-20 bg-white shadow-sm border-b flex items-center px-6 justify-between z-20 shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-slate-100 text-slate-600 transition-colors"><Menu size={24} /></button>
@@ -200,18 +226,15 @@ export default function MonevApp() {
           <div className="flex items-center gap-2 text-sm bg-slate-100 px-4 py-2 rounded-full font-medium text-[#2C415C]"><User size={16} /> Admin</div>
         </header>
 
-        {/* AREA KONTEN UTAMA */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#D9D9D9] relative">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#D9D9D9] relative flex flex-col">
 
           {/* MENU DASHBOARD */}
           {activeMenu === "dashboard" && (
             <div className="space-y-6">
-              {/* Sticky Header Dashboard */}
-              <div className="sticky top-0 z-10 bg-[#D9D9D9] pt-2 pb-4 -mt-2 -mx-2 px-2">
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <h2 className="text-2xl font-bold text-[#2C415C]">Dashboard Visualisasi Logistik</h2>
-                  <p className="text-slate-500 mt-1">Angka dan diagram ter-update otomatis menyesuaikan jenis barang yang diinput.</p>
-                </div>
+              {/* Judul tidak sticky lagi */}
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#2C415C]">Dashboard Visualisasi Logistik</h2>
+                <p className="text-sm sm:text-base text-slate-500 mt-1">Angka dan diagram ter-update otomatis menyesuaikan jenis barang yang diinput.</p>
               </div>
 
               {dynamicStats.length === 0 ? (
@@ -257,7 +280,7 @@ export default function MonevApp() {
 
           {/* MENU PEMBELIAN */}
           {activeMenu === "pembelian" && (
-            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col flex-1 min-h-0">
               <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Data Pembelian (Penerimaan Provinsi)</CardTitle></div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetFormPembelian(); }}>
@@ -276,13 +299,23 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
+              <div className="flex-1 bg-white rounded-b-xl relative overflow-hidden [&>div]:absolute [&>div]:inset-0 [&>div]:overflow-y-auto">
                 <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm"><TableRow><TableHead className="px-6 py-4">No BAST</TableHead><TableHead className="py-4">Nama Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="py-4">Penyedia</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow></TableHeader>
+                  <TableHeader className="sticky top-0 z-20 bg-slate-100 shadow-sm border-b border-slate-200">
+                    <TableRow>
+                      <TableHead className="px-6 py-4 bg-slate-100">No BAST</TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tanggal')}><div className="flex items-center">Tanggal {getSortIcon('tanggal')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('barang')}><div className="flex items-center">Nama Barang {getSortIcon('barang')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100">Jumlah</TableHead>
+                      <TableHead className="py-4 bg-slate-100">Penyedia</TableHead>
+                      <TableHead className="text-center py-4 bg-slate-100">Dokumen</TableHead>
+                      <TableHead className="text-right px-6 py-4 bg-slate-100">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableBody>
-                    {dataPembelian.map((item) => (
+                    {sortedPembelian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
-                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell><TableCell>{item.penyedia}</TableCell>
+                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell><TableCell>{item.penyedia}</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, barang: item.barang || "", jumlah: item.jumlah.toString(), penyedia: item.penyedia }); setIsDialogOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
@@ -298,7 +331,7 @@ export default function MonevApp() {
 
           {/* MENU PEMAKAIAN */}
           {activeMenu === "pemakaian" && (
-            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col flex-1 min-h-0">
               <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Data Pemakaian Internal</CardTitle></div>
                 <Dialog open={isDialogPemakaianOpen} onOpenChange={(open) => { setIsDialogPemakaianOpen(open); if(!open) resetFormPemakaian(); }}>
@@ -317,11 +350,20 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
+              <div className="flex-1 bg-white rounded-b-xl relative overflow-hidden [&>div]:absolute [&>div]:inset-0 [&>div]:overflow-y-auto">
                 <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm"><TableRow><TableHead className="px-6 py-4">Tanggal</TableHead><TableHead className="py-4">Nama Pegawai</TableHead><TableHead className="py-4">Nama Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow></TableHeader>
+                  <TableHeader className="sticky top-0 z-20 bg-slate-100 shadow-sm border-b border-slate-200">
+                    <TableRow>
+                      <TableHead className="px-6 py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tanggal')}><div className="flex items-center">Tanggal {getSortIcon('tanggal')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100">Nama Pegawai</TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('barang')}><div className="flex items-center">Nama Barang {getSortIcon('barang')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100">Jumlah</TableHead>
+                      <TableHead className="text-center py-4 bg-slate-100">Dokumen</TableHead>
+                      <TableHead className="text-right px-6 py-4 bg-slate-100">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableBody>
-                    {dataPemakaian.map((item) => (
+                    {sortedPemakaian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6">{item.tanggal}</TableCell><TableCell className="font-medium text-slate-700">{item.nama}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
@@ -339,7 +381,7 @@ export default function MonevApp() {
 
           {/* MENU TRANSFER KELUAR */}
           {activeMenu === "transfer" && (
-            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col flex-1 min-h-0">
               <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Transfer Keluar (Distribusi)</CardTitle></div>
                 <Dialog open={isDialogTransferOpen} onOpenChange={(open) => { setIsDialogTransferOpen(open); if(!open) resetFormTransfer(); }}>
@@ -371,13 +413,22 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
+              <div className="flex-1 bg-white rounded-b-xl relative overflow-hidden [&>div]:absolute [&>div]:inset-0 [&>div]:overflow-y-auto">
                 <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm">
-                    <TableRow><TableHead className="px-6 py-4">No BAST</TableHead><TableHead className="py-4">Tanggal</TableHead><TableHead className="py-4">Tujuan</TableHead><TableHead className="py-4">Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="text-center py-4">Status</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow>
+                  <TableHeader className="sticky top-0 z-20 bg-slate-100 shadow-sm border-b border-slate-200">
+                    <TableRow>
+                      <TableHead className="px-6 py-4 bg-slate-100">No BAST</TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tanggal')}><div className="flex items-center">Tanggal {getSortIcon('tanggal')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tujuan')}><div className="flex items-center">Tujuan {getSortIcon('tujuan')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('barang')}><div className="flex items-center">Barang {getSortIcon('barang')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100">Jumlah</TableHead>
+                      <TableHead className="text-center py-4 bg-slate-100">Status</TableHead>
+                      <TableHead className="text-center py-4 bg-slate-100">Dokumen</TableHead>
+                      <TableHead className="text-right px-6 py-4 bg-slate-100">Aksi</TableHead>
+                    </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dataTransfer.map((item) => (
+                    {sortedTransfer.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.tujuan}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
                         <TableCell className="text-center"><span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.status === 'Diterima' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.status}</span></TableCell>
@@ -396,7 +447,7 @@ export default function MonevApp() {
 
           {/* MENU TRANSFER MASUK */}
           {activeMenu === "masuk" && (
-            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col flex-1 min-h-0">
               <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Transfer Masuk (Penerimaan Sah)</CardTitle></div>
                 <Dialog open={isDialogMasukOpen} onOpenChange={(open) => { setIsDialogMasukOpen(open); if(!open) resetFormMasuk(); }}>
@@ -415,11 +466,21 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
+              <div className="flex-1 bg-white rounded-b-xl relative overflow-hidden [&>div]:absolute [&>div]:inset-0 [&>div]:overflow-y-auto">
                 <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm"><TableRow><TableHead className="px-6 py-4">No BAST</TableHead><TableHead className="py-4">Tanggal</TableHead><TableHead className="py-4">Pengirim</TableHead><TableHead className="py-4">Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow></TableHeader>
+                  <TableHeader className="sticky top-0 z-20 bg-slate-100 shadow-sm border-b border-slate-200">
+                    <TableRow>
+                      <TableHead className="px-6 py-4 bg-slate-100">No BAST</TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tanggal')}><div className="flex items-center">Tanggal {getSortIcon('tanggal')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('pengirim')}><div className="flex items-center">Pengirim {getSortIcon('pengirim')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('barang')}><div className="flex items-center">Barang {getSortIcon('barang')}</div></TableHead>
+                      <TableHead className="py-4 bg-slate-100">Jumlah</TableHead>
+                      <TableHead className="text-center py-4 bg-slate-100">Dokumen</TableHead>
+                      <TableHead className="text-right px-6 py-4 bg-slate-100">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableBody>
-                    {dataMasuk.map((item) => (
+                    {sortedMasuk.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.pengirim}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
@@ -456,7 +517,6 @@ export default function MonevApp() {
     </div>
   )
 
-  // Reset Helpers
   function resetFormPembelian() { setFormData({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" }); setFile(null); }
   function resetFormPemakaian() { setFormPemakaian({ id: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" }); setFilePemakaian(null); }
   function resetFormTransfer() { setFormTransfer({ id: "", noBast: "", tanggal: "", tujuan: "", barang: "", jumlah: "", status: "Dikirim" }); setFileTransfer(null); }
