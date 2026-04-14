@@ -31,11 +31,10 @@ const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#1
 
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
 
-// Font modern untuk memaksa browser tidak pakai Times New Roman
+// Memaksa penggunaan font modern bawaan sistem
 const modernFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
 
 export default function MonevApp() {
-  // --- STATE LOGIN & SESSION ---
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [inputUsername, setInputUsername] = useState("")
@@ -45,7 +44,6 @@ export default function MonevApp() {
   const [activeMenu, setActiveMenu] = useState("dashboard")
   const [viewDocument, setViewDocument] = useState<any>(null)
 
-  // --- States CRUD ---
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" })
@@ -68,16 +66,11 @@ export default function MonevApp() {
 
   useEffect(() => {
     const session = sessionStorage.getItem("appSession");
-    if (session === "aktif") {
-      setIsLoggedIn(true);
-      loadData();
-    }
+    if (session === "aktif") { setIsLoggedIn(true); loadData(); }
     setIsCheckingSession(false);
   }, [])
 
-  useEffect(() => {
-    if (isLoggedIn) loadData();
-  }, [isLoggedIn])
+  useEffect(() => { if (isLoggedIn) loadData(); }, [isLoggedIn])
 
   async function loadData() {
     try {
@@ -89,25 +82,17 @@ export default function MonevApp() {
     } catch (e) { console.error("Gagal load data:", e) }
   }
 
-  // --- LOGIKA LOGIN ---
   const handleLogin = () => {
     if (inputUsername.toLowerCase() === "admin" && inputPassword === "bpsaceh2026") {
-      setIsLoggedIn(true)
-      sessionStorage.setItem("appSession", "aktif")
-      setInputUsername("")
-      setInputPassword("")
-    } else {
-      alert("Username atau Password salah! Silakan coba lagi.")
-    }
+      setIsLoggedIn(true); sessionStorage.setItem("appSession", "aktif");
+      setInputUsername(""); setInputPassword("");
+    } else { alert("Username atau Password salah! Silakan coba lagi.") }
   }
 
   const handleLogout = () => {
-    setIsLoggedIn(false)
-    sessionStorage.removeItem("appSession")
-    setActiveMenu("dashboard")
+    setIsLoggedIn(false); sessionStorage.removeItem("appSession"); setActiveMenu("dashboard");
   }
 
-  // --- LOGIKA DASHBOARD ---
   const uniqueBarangMap = new Map();
   dataPembelian.forEach(item => {
     if (item.barang) {
@@ -120,111 +105,51 @@ export default function MonevApp() {
     const masuk = dataPembelian.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
     const pakai = dataPemakaian.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
     const transfer = dataTransfer.filter(i => i.barang?.toLowerCase().trim() === key).reduce((sum, i) => sum + i.jumlah, 0);
-    const totalKeluar = pakai + transfer;
-    const sisa = masuk - totalKeluar;
-
+    const totalKeluar = pakai + transfer; const sisa = masuk - totalKeluar;
     return { name: originalName, masuk, keluar: totalKeluar, sisa: sisa > 0 ? sisa : 0 };
   });
 
   // --- Handlers CRUD ---
   const handleSavePembelian = async () => {
-    const dataToSend = new FormData()
-    dataToSend.append("noBast", formData.noBast); dataToSend.append("tanggal", formData.tanggal);
-    dataToSend.append("barang", formData.barang); dataToSend.append("jumlah", formData.jumlah);
-    dataToSend.append("penyedia", formData.penyedia); if (file) dataToSend.append("dokumen", file);
-    try {
-      if (formData.id) await updatePembelian(formData.id, dataToSend); else await addPembelian(dataToSend);
-      await loadData(); setIsDialogOpen(false); resetFormPembelian(); alert("Berhasil simpan pembelian!")
-    } catch (error) { alert("Gagal simpan pembelian") }
+    const dataToSend = new FormData(); dataToSend.append("noBast", formData.noBast); dataToSend.append("tanggal", formData.tanggal); dataToSend.append("barang", formData.barang); dataToSend.append("jumlah", formData.jumlah); dataToSend.append("penyedia", formData.penyedia); if (file) dataToSend.append("dokumen", file);
+    try { if (formData.id) await updatePembelian(formData.id, dataToSend); else await addPembelian(dataToSend); await loadData(); setIsDialogOpen(false); resetFormPembelian(); alert("Berhasil simpan pembelian!") } catch (error) { alert("Gagal simpan pembelian") }
   }
-
   const handleSavePemakaian = async () => {
-    const dataToSend = new FormData()
-    dataToSend.append("tanggal", formPemakaian.tanggal); dataToSend.append("nama", formPemakaian.nama);
-    dataToSend.append("kegiatan", formPemakaian.kegiatan); dataToSend.append("barang", formPemakaian.barang);
-    dataToSend.append("jumlah", formPemakaian.jumlah); if (filePemakaian) dataToSend.append("dokumen", filePemakaian);
-    try {
-      if (formPemakaian.id) await updatePemakaian(formPemakaian.id, dataToSend); else await addPemakaian(dataToSend);
-      await loadData(); setIsDialogPemakaianOpen(false); resetFormPemakaian(); alert("Berhasil simpan pemakaian!")
-    } catch (error) { alert("Gagal simpan pemakaian") }
+    const dataToSend = new FormData(); dataToSend.append("tanggal", formPemakaian.tanggal); dataToSend.append("nama", formPemakaian.nama); dataToSend.append("kegiatan", formPemakaian.kegiatan); dataToSend.append("barang", formPemakaian.barang); dataToSend.append("jumlah", formPemakaian.jumlah); if (filePemakaian) dataToSend.append("dokumen", filePemakaian);
+    try { if (formPemakaian.id) await updatePemakaian(formPemakaian.id, dataToSend); else await addPemakaian(dataToSend); await loadData(); setIsDialogPemakaianOpen(false); resetFormPemakaian(); alert("Berhasil simpan pemakaian!") } catch (error) { alert("Gagal simpan pemakaian") }
   }
-
   const handleSaveTransfer = async () => {
     if(!formTransfer.tujuan) return alert("Pilih Tujuan Kab/Kota terlebih dahulu!");
-    const dataToSend = new FormData()
-    dataToSend.append("noBast", formTransfer.noBast); dataToSend.append("tanggal", formTransfer.tanggal);
-    dataToSend.append("tujuan", formTransfer.tujuan); dataToSend.append("barang", formTransfer.barang);
-    dataToSend.append("jumlah", formTransfer.jumlah); dataToSend.append("status", formTransfer.status);
-    if (fileTransfer) dataToSend.append("dokumen", fileTransfer)
-    try {
-      if (formTransfer.id) await updateTransferKeluar(formTransfer.id, dataToSend); else await addTransferKeluar(dataToSend);
-      await loadData(); setIsDialogTransferOpen(false); resetFormTransfer(); alert("Berhasil simpan transfer keluar!")
-    } catch (error) { alert("Gagal simpan transfer") }
+    const dataToSend = new FormData(); dataToSend.append("noBast", formTransfer.noBast); dataToSend.append("tanggal", formTransfer.tanggal); dataToSend.append("tujuan", formTransfer.tujuan); dataToSend.append("barang", formTransfer.barang); dataToSend.append("jumlah", formTransfer.jumlah); dataToSend.append("status", formTransfer.status); if (fileTransfer) dataToSend.append("dokumen", fileTransfer)
+    try { if (formTransfer.id) await updateTransferKeluar(formTransfer.id, dataToSend); else await addTransferKeluar(dataToSend); await loadData(); setIsDialogTransferOpen(false); resetFormTransfer(); alert("Berhasil simpan transfer keluar!") } catch (error) { alert("Gagal simpan transfer") }
   }
-
   const handleSaveMasuk = async () => {
-    const dataToSend = new FormData()
-    dataToSend.append("noBast", formMasuk.noBast); dataToSend.append("tanggal", formMasuk.tanggal);
-    dataToSend.append("pengirim", formMasuk.pengirim); dataToSend.append("barang", formMasuk.barang);
-    dataToSend.append("jumlah", formMasuk.jumlah); if (fileMasuk) dataToSend.append("dokumen", fileMasuk)
-    try {
-      if (formMasuk.id) await updateTransferMasuk(formMasuk.id, dataToSend); else await addTransferMasuk(dataToSend);
-      await loadData(); setIsDialogMasukOpen(false); resetFormMasuk(); alert("Berhasil simpan penerimaan barang!")
-    } catch (error) { alert("Gagal simpan transfer masuk") }
+    const dataToSend = new FormData(); dataToSend.append("noBast", formMasuk.noBast); dataToSend.append("tanggal", formMasuk.tanggal); dataToSend.append("pengirim", formMasuk.pengirim); dataToSend.append("barang", formMasuk.barang); dataToSend.append("jumlah", formMasuk.jumlah); if (fileMasuk) dataToSend.append("dokumen", fileMasuk)
+    try { if (formMasuk.id) await updateTransferMasuk(formMasuk.id, dataToSend); else await addTransferMasuk(dataToSend); await loadData(); setIsDialogMasukOpen(false); resetFormMasuk(); alert("Berhasil simpan penerimaan barang!") } catch (error) { alert("Gagal simpan transfer masuk") }
   }
 
-  // --- TAMPILAN HALAMAN LOGIN ---
+  // --- HALAMAN LOGIN ---
   if (isCheckingSession) return null;
 
   if (!isLoggedIn) {
     return (
       <div className="flex h-screen items-center justify-center" style={{ backgroundColor: "#D48B10", fontFamily: modernFont }}>
         <div className="bg-white p-8 rounded-xl shadow-2xl w-[320px] sm:w-[380px] flex flex-col items-center">
-          {/* Logo BPS Menggunakan format .png agar lebih aman */}
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Logo_Badan_Pusat_Statistik_%28BPS%29_Indonesia.svg/512px-Logo_Badan_Pusat_Statistik_%28BPS%29_Indonesia.svg.png"
-            alt="Logo BPS"
-            className="h-20 mb-8 object-contain"
-          />
-
+          {/* Logo BPS sekarang memanggil file lokal di public/logo-bps.png */}
+          <img src="/logo-bps.png" alt="Logo BPS" className="h-20 mb-8 object-contain" />
           <div className="w-full space-y-5">
             <div className="relative">
               <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="USERNAME"
-                className="pl-10 text-sm h-10 border-slate-300 focus-visible:ring-[#2C415C]"
-                style={{ fontFamily: modernFont }}
-                value={inputUsername}
-                onChange={(e) => setInputUsername(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
+              <Input placeholder="USERNAME" className="pl-10 text-sm h-10 border-slate-300 focus-visible:ring-[#2C415C]" style={{ fontFamily: modernFont }} value={inputUsername} onChange={(e) => setInputUsername(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
             </div>
-
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-              <Input
-                type="password"
-                placeholder="PASSWORD"
-                className="pl-10 text-sm h-10 border-slate-300 focus-visible:ring-[#2C415C]"
-                style={{ fontFamily: modernFont }}
-                value={inputPassword}
-                onChange={(e) => setInputPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
+              <Input type="password" placeholder="PASSWORD" className="pl-10 text-sm h-10 border-slate-300 focus-visible:ring-[#2C415C]" style={{ fontFamily: modernFont }} value={inputPassword} onChange={(e) => setInputPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
             </div>
-
-            {/* Hanya Tombol Login yang Navy */}
-            <Button
-              className="w-full bg-[#2C415C] hover:bg-[#1a2839] text-white mt-4 font-semibold tracking-wider h-10"
-              style={{ fontFamily: modernFont }}
-              onClick={handleLogin}
-            >
+            <Button className="w-full bg-[#2C415C] hover:bg-[#1a2839] text-white mt-4 font-semibold tracking-wider h-10" style={{ fontFamily: modernFont }} onClick={handleLogin}>
               LOGIN
             </Button>
-
-            <p className="text-xs text-right text-slate-500 mt-2 cursor-pointer hover:underline hover:text-[#2C415C] transition-colors">
-              Forgot password?
-            </p>
+            <p className="text-xs text-right text-slate-500 mt-2 cursor-pointer hover:underline hover:text-[#2C415C] transition-colors">Forgot password?</p>
           </div>
         </div>
       </div>
@@ -236,13 +161,12 @@ export default function MonevApp() {
     <div className="flex h-screen bg-[#D9D9D9] text-slate-800 overflow-hidden" style={{ fontFamily: modernFont }}>
 
       {/* SIDEBAR */}
-      <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shadow-sm z-10`}>
+      <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shadow-sm z-30`}>
         <div className="p-4 border-b h-20 flex items-center justify-center gap-3">
           <div className="bg-[#D48B10] p-2 rounded-lg text-white"><LayoutDashboard size={20} /></div>
           {isSidebarOpen && <span className="font-bold text-[#2C415C] whitespace-nowrap overflow-hidden tracking-wide">MONEV-SE</span>}
         </div>
         <div className="flex-1 py-4 px-3 flex flex-col gap-2 overflow-y-auto">
-          {/* Semua menu navigasi aktif diubah warnanya jadi oranye #D48B10 */}
           <button onClick={() => setActiveMenu("dashboard")} title="Dashboard" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "dashboard" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
             <div className="min-w-5"><PieChartIcon size={20} /></div> {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">Dashboard</span>}
           </button>
@@ -268,25 +192,26 @@ export default function MonevApp() {
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* HEADER */}
-        <header className="h-20 bg-white shadow-sm border-b flex items-center px-6 justify-between z-0">
+        <header className="h-20 bg-white shadow-sm border-b flex items-center px-6 justify-between z-20 shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-md hover:bg-slate-100 text-slate-600 transition-colors"><Menu size={24} /></button>
             <h1 className="text-xl font-bold text-[#2C415C] hidden sm:block tracking-wide">BPS PROVINSI ACEH</h1>
           </div>
-          <div className="flex items-center gap-2 text-sm bg-slate-100 px-4 py-2 rounded-full font-medium text-[#2C415C]">
-            <User size={16} /> Admin
-          </div>
+          <div className="flex items-center gap-2 text-sm bg-slate-100 px-4 py-2 rounded-full font-medium text-[#2C415C]"><User size={16} /> Admin</div>
         </header>
 
-        {/* AREA KONTEN (Background D9D9D9 sesuai permintaan) */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#D9D9D9]">
+        {/* AREA KONTEN UTAMA */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#D9D9D9] relative">
 
           {/* MENU DASHBOARD */}
           {activeMenu === "dashboard" && (
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h2 className="text-2xl font-bold text-[#2C415C]">Dashboard Visualisasi Logistik</h2>
-                <p className="text-slate-500 mt-1">Angka dan diagram ter-update otomatis menyesuaikan jenis barang yang diinput.</p>
+              {/* Sticky Header Dashboard */}
+              <div className="sticky top-0 z-10 bg-[#D9D9D9] pt-2 pb-4 -mt-2 -mx-2 px-2">
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h2 className="text-2xl font-bold text-[#2C415C]">Dashboard Visualisasi Logistik</h2>
+                  <p className="text-slate-500 mt-1">Angka dan diagram ter-update otomatis menyesuaikan jenis barang yang diinput.</p>
+                </div>
               </div>
 
               {dynamicStats.length === 0 ? (
@@ -296,14 +221,13 @@ export default function MonevApp() {
                   <p className="text-slate-500">Input data di menu Pembelian terlebih dahulu untuk memunculkan grafik.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
                   {dynamicStats.map((stat, index) => {
                     const colorPilih = CHART_COLORS[index % CHART_COLORS.length];
                     const chartData = [
                       { name: 'Terdistribusi / Dipakai', value: stat.keluar, color: '#e2e8f0' },
                       { name: 'Sisa Stock (Provinsi)', value: stat.sisa, color: colorPilih }
                     ];
-
                     return (
                       <Card key={index} className="shadow-sm border-none rounded-xl">
                         <CardHeader className="pb-2">
@@ -333,14 +257,11 @@ export default function MonevApp() {
 
           {/* MENU PEMBELIAN */}
           {activeMenu === "pembelian" && (
-            <Card className="shadow-sm border-none rounded-xl">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+              <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Data Pembelian (Penerimaan Provinsi)</CardTitle></div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetFormPembelian(); }}>
-                  <DialogTrigger asChild>
-                    {/* Tombol Aksi diubah menjadi Oranye */}
-                    <Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button>
-                  </DialogTrigger>
+                  <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
                   <DialogContent style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formData.id ? "Edit" : "Tambah"} Pembelian</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -351,19 +272,17 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Nama Penyedia</Label><Input value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Dokumen BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
                     </div>
-                    {/* Tombol Simpan diubah menjadi Oranye */}
                     <DialogFooter><Button onClick={handleSavePembelian} className="bg-[#D48B10] hover:bg-[#b0730d] text-white w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-x-auto">
+              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
                 <Table>
-                  <TableHeader className="bg-slate-100/50"><TableRow><TableHead className="px-6">No BAST</TableHead><TableHead>Nama Barang</TableHead><TableHead>Jumlah</TableHead><TableHead>Penyedia</TableHead><TableHead className="text-center">Dokumen</TableHead><TableHead className="text-right px-6">Aksi</TableHead></TableRow></TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm"><TableRow><TableHead className="px-6 py-4">No BAST</TableHead><TableHead className="py-4">Nama Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="py-4">Penyedia</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {dataPembelian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
                         <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell><TableCell>{item.penyedia}</TableCell>
-                        {/* Ikon Dokumen jadi Oranye */}
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, barang: item.barang || "", jumlah: item.jumlah.toString(), penyedia: item.penyedia }); setIsDialogOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
@@ -379,8 +298,8 @@ export default function MonevApp() {
 
           {/* MENU PEMAKAIAN */}
           {activeMenu === "pemakaian" && (
-            <Card className="shadow-sm border-none rounded-xl">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+              <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Data Pemakaian Internal</CardTitle></div>
                 <Dialog open={isDialogPemakaianOpen} onOpenChange={(open) => { setIsDialogPemakaianOpen(open); if(!open) resetFormPemakaian(); }}>
                   <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
@@ -398,9 +317,9 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-x-auto">
+              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
                 <Table>
-                  <TableHeader className="bg-slate-100/50"><TableRow><TableHead className="px-6">Tanggal</TableHead><TableHead>Nama Pegawai</TableHead><TableHead>Nama Barang</TableHead><TableHead>Jumlah</TableHead><TableHead className="text-center">Dokumen</TableHead><TableHead className="text-right px-6">Aksi</TableHead></TableRow></TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm"><TableRow><TableHead className="px-6 py-4">Tanggal</TableHead><TableHead className="py-4">Nama Pegawai</TableHead><TableHead className="py-4">Nama Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {dataPemakaian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
@@ -420,8 +339,8 @@ export default function MonevApp() {
 
           {/* MENU TRANSFER KELUAR */}
           {activeMenu === "transfer" && (
-            <Card className="shadow-sm border-none rounded-xl">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+              <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Transfer Keluar (Distribusi)</CardTitle></div>
                 <Dialog open={isDialogTransferOpen} onOpenChange={(open) => { setIsDialogTransferOpen(open); if(!open) resetFormTransfer(); }}>
                   <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
@@ -432,7 +351,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Tanggal</Label><Input type="date" value={formTransfer.tanggal} onChange={(e) => setFormTransfer({...formTransfer, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2">
                         <Label>Tujuan (Kab/Kota)</Label>
-                        <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm" value={formTransfer.tujuan} onChange={(e) => setFormTransfer({...formTransfer, tujuan: e.target.value})}>
+                        <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" value={formTransfer.tujuan} onChange={(e) => setFormTransfer({...formTransfer, tujuan: e.target.value})}>
                           <option value="" disabled>Pilih Tujuan...</option>
                           {DAFTAR_KABKOTA.map((kab) => (<option key={kab} value={kab}>{kab}</option>))}
                         </select>
@@ -441,7 +360,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formTransfer.jumlah} onChange={(e) => setFormTransfer({...formTransfer, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2">
                         <Label>Status Pengiriman</Label>
-                        <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm" value={formTransfer.status} onChange={(e) => setFormTransfer({...formTransfer, status: e.target.value})}>
+                        <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" value={formTransfer.status} onChange={(e) => setFormTransfer({...formTransfer, status: e.target.value})}>
                           <option value="Dikirim">Dikirim</option>
                           <option value="Diterima">Diterima</option>
                         </select>
@@ -452,10 +371,10 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-x-auto">
+              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
                 <Table>
-                  <TableHeader className="bg-slate-100/50">
-                    <TableRow><TableHead className="px-6">No BAST</TableHead><TableHead>Tanggal</TableHead><TableHead>Tujuan</TableHead><TableHead>Barang</TableHead><TableHead>Jumlah</TableHead><TableHead className="text-center">Status</TableHead><TableHead className="text-center">Dokumen</TableHead><TableHead className="text-right px-6">Aksi</TableHead></TableRow>
+                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm">
+                    <TableRow><TableHead className="px-6 py-4">No BAST</TableHead><TableHead className="py-4">Tanggal</TableHead><TableHead className="py-4">Tujuan</TableHead><TableHead className="py-4">Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="text-center py-4">Status</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {dataTransfer.map((item) => (
@@ -477,8 +396,8 @@ export default function MonevApp() {
 
           {/* MENU TRANSFER MASUK */}
           {activeMenu === "masuk" && (
-            <Card className="shadow-sm border-none rounded-xl">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="shadow-sm border-none rounded-xl flex flex-col h-[calc(100vh-8rem)]">
+              <CardHeader className="flex flex-row items-center justify-between shrink-0 bg-white rounded-t-xl z-20 border-b border-slate-100">
                 <div><CardTitle className="text-[#2C415C]">Transfer Masuk (Penerimaan Sah)</CardTitle></div>
                 <Dialog open={isDialogMasukOpen} onOpenChange={(open) => { setIsDialogMasukOpen(open); if(!open) resetFormMasuk(); }}>
                   <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md">+ Tambah</Button></DialogTrigger>
@@ -496,9 +415,9 @@ export default function MonevApp() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <div className="overflow-x-auto">
+              <div className="overflow-y-auto flex-1 bg-white rounded-b-xl relative">
                 <Table>
-                  <TableHeader className="bg-slate-100/50"><TableRow><TableHead className="px-6">No BAST</TableHead><TableHead>Tanggal</TableHead><TableHead>Pengirim</TableHead><TableHead>Barang</TableHead><TableHead>Jumlah</TableHead><TableHead className="text-center">Dokumen</TableHead><TableHead className="text-right px-6">Aksi</TableHead></TableRow></TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-slate-100 outline outline-1 outline-slate-200 shadow-sm"><TableRow><TableHead className="px-6 py-4">No BAST</TableHead><TableHead className="py-4">Tanggal</TableHead><TableHead className="py-4">Pengirim</TableHead><TableHead className="py-4">Barang</TableHead><TableHead className="py-4">Jumlah</TableHead><TableHead className="text-center py-4">Dokumen</TableHead><TableHead className="text-right px-6 py-4">Aksi</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {dataMasuk.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
