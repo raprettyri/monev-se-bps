@@ -29,7 +29,22 @@ export async function getPemakaian() { noStore(); return await prisma.pemakaian.
 export async function addPemakaian(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
-  await prisma.pemakaian.create({ data: { noBukti: formData.get("noBukti") as string, tanggal: formData.get("tanggal") as string, nama: formData.get("nama") as string, kegiatan: formData.get("kegiatan") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string), dokumen: urlFile } })
+
+  // Tangkap string JSON dari frontend (Multi-item pemakaian)
+  const itemsStr = formData.get("items") as string;
+  if (itemsStr) {
+    const items = JSON.parse(itemsStr);
+    const dataToCreate = items.map((item: any) => ({
+      noBukti: formData.get("noBukti") as string,
+      tanggal: formData.get("tanggal") as string,
+      nama: formData.get("nama") as string,
+      kegiatan: formData.get("kegiatan") as string,
+      barang: item.barang,
+      jumlah: parseInt(item.jumlah),
+      dokumen: urlFile
+    }));
+    await prisma.pemakaian.createMany({ data: dataToCreate });
+  }
   revalidatePath("/")
 }
 export async function deletePemakaian(id: string) { await prisma.pemakaian.delete({ where: { id } }); revalidatePath("/") }
@@ -48,7 +63,7 @@ export async function addTransferKeluar(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
 
-  // Tangkap string JSON dari frontend (Multi-item)
+  // Tangkap string JSON dari frontend (Multi-item distribusi)
   const itemsStr = formData.get("items") as string;
   if (itemsStr) {
     const items = JSON.parse(itemsStr);
