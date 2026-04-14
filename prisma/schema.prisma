@@ -20,6 +20,7 @@ model Pembelian {
 
 model Pemakaian {
   id        String   @id @default(cuid())
+  noBukti   String
   tanggal   String
   nama      String
   kegiatan  String
@@ -43,11 +44,11 @@ model TransferKeluar {
 
 model TransferMasuk {
   id        String   @id @default(cuid())
-  noBast    String   // Nomor BAST yang sudah ttd 2 pihak
+  noBast    String
   tanggal   String
-  pengirim  String   // Misal: BPS Provinsi Aceh
+  pengirim  String
   barang    String
   jumlah    Int
-  dokumen   String?  // Surat Pengantar / BAST ttd 2 pihak
+  dokumen   String?
   createdAt DateTime @default(now())
 }

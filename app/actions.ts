@@ -1,7 +1,6 @@
 "use server"
 
 import { PrismaClient } from "@prisma/client"
-// Tambahkan unstable_noStore untuk mencegah hantu cache Next.js!
 import { revalidatePath, unstable_noStore as noStore } from "next/cache"
 import { put } from "@vercel/blob"
 
@@ -30,14 +29,14 @@ export async function getPemakaian() { noStore(); return await prisma.pemakaian.
 export async function addPemakaian(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
-  await prisma.pemakaian.create({ data: { tanggal: formData.get("tanggal") as string, nama: formData.get("nama") as string, kegiatan: formData.get("kegiatan") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string), dokumen: urlFile } })
+  await prisma.pemakaian.create({ data: { noBukti: formData.get("noBukti") as string, tanggal: formData.get("tanggal") as string, nama: formData.get("nama") as string, kegiatan: formData.get("kegiatan") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string), dokumen: urlFile } })
   revalidatePath("/")
 }
 export async function deletePemakaian(id: string) { await prisma.pemakaian.delete({ where: { id } }); revalidatePath("/") }
 export async function updatePemakaian(id: string, formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
-  const dataToUpdate: any = { tanggal: formData.get("tanggal") as string, nama: formData.get("nama") as string, kegiatan: formData.get("kegiatan") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string) };
+  const dataToUpdate: any = { noBukti: formData.get("noBukti") as string, tanggal: formData.get("tanggal") as string, nama: formData.get("nama") as string, kegiatan: formData.get("kegiatan") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string) };
   if (urlFile) dataToUpdate.dokumen = urlFile;
   await prisma.pemakaian.update({ where: { id }, data: dataToUpdate })
   revalidatePath("/")
@@ -48,7 +47,22 @@ export async function getTransferKeluar() { noStore(); return await prisma.trans
 export async function addTransferKeluar(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
-  await prisma.transferKeluar.create({ data: { noBast: formData.get("noBast") as string, tanggal: formData.get("tanggal") as string, tujuan: formData.get("tujuan") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string), status: formData.get("status") as string || "Dikirim", dokumen: urlFile } })
+
+  // Tangkap string JSON dari frontend (Multi-item)
+  const itemsStr = formData.get("items") as string;
+  if (itemsStr) {
+    const items = JSON.parse(itemsStr);
+    const dataToCreate = items.map((item: any) => ({
+      noBast: formData.get("noBast") as string,
+      tanggal: formData.get("tanggal") as string,
+      tujuan: formData.get("tujuan") as string,
+      barang: item.barang,
+      jumlah: parseInt(item.jumlah),
+      status: formData.get("status") as string || "Dikirim",
+      dokumen: urlFile
+    }));
+    await prisma.transferKeluar.createMany({ data: dataToCreate });
+  }
   revalidatePath("/")
 }
 export async function deleteTransferKeluar(id: string) { await prisma.transferKeluar.delete({ where: { id } }); revalidatePath("/") }

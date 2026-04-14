@@ -30,9 +30,7 @@ const DAFTAR_KABKOTA = [
 ];
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
-
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
-
 const modernFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
 
 export default function MonevApp() {
@@ -44,9 +42,9 @@ export default function MonevApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [activeMenu, setActiveMenu] = useState("dashboard")
   const [viewDocument, setViewDocument] = useState<any>(null)
-
   const [sortConfig, setSortConfig] = useState<{ key: string | null, direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
+  // --- States CRUD ---
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" })
@@ -54,12 +52,13 @@ export default function MonevApp() {
 
   const [dataPemakaian, setDataPemakaian] = useState<any[]>([])
   const [isDialogPemakaianOpen, setIsDialogPemakaianOpen] = useState(false)
-  const [formPemakaian, setFormPemakaian] = useState({ id: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
+  const [formPemakaian, setFormPemakaian] = useState({ id: "", noBukti: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" })
   const [filePemakaian, setFilePemakaian] = useState<File | null>(null)
 
   const [dataTransfer, setDataTransfer] = useState<any[]>([])
   const [isDialogTransferOpen, setIsDialogTransferOpen] = useState(false)
   const [formTransfer, setFormTransfer] = useState({ id: "", noBast: "", tanggal: "", tujuan: "", barang: "", jumlah: "", status: "Dikirim" })
+  const [transferItems, setTransferItems] = useState<{barang: string, jumlah: string}[]>([]) // State multi-item
   const [fileTransfer, setFileTransfer] = useState<File | null>(null)
 
   const [dataMasuk, setDataMasuk] = useState<any[]>([])
@@ -74,7 +73,6 @@ export default function MonevApp() {
   }, [])
 
   useEffect(() => { if (isLoggedIn) loadData(); }, [isLoggedIn])
-
   useEffect(() => { setSortConfig({ key: null, direction: 'asc' }) }, [activeMenu])
 
   async function loadData() {
@@ -89,15 +87,13 @@ export default function MonevApp() {
 
   const handleLogin = () => {
     if (inputUsername.toLowerCase() === "admin" && inputPassword === "bpsaceh2026") {
-      setIsLoggedIn(true); sessionStorage.setItem("appSession", "aktif");
-      setInputUsername(""); setInputPassword("");
+      setIsLoggedIn(true); sessionStorage.setItem("appSession", "aktif"); setInputUsername(""); setInputPassword("");
     } else { alert("Username atau Password salah! Silakan coba lagi.") }
   }
 
-  const handleLogout = () => {
-    setIsLoggedIn(false); sessionStorage.removeItem("appSession"); setActiveMenu("dashboard");
-  }
+  const handleLogout = () => { setIsLoggedIn(false); sessionStorage.removeItem("appSession"); setActiveMenu("dashboard"); }
 
+  // --- LOGIKA SORTING ---
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
@@ -141,19 +137,42 @@ export default function MonevApp() {
     return { name: originalName, masuk, keluar: totalKeluar, sisa: sisa > 0 ? sisa : 0 };
   });
 
+  // --- Handlers CRUD ---
   const handleSavePembelian = async () => {
     const dataToSend = new FormData(); dataToSend.append("noBast", formData.noBast); dataToSend.append("tanggal", formData.tanggal); dataToSend.append("barang", formData.barang); dataToSend.append("jumlah", formData.jumlah); dataToSend.append("penyedia", formData.penyedia); if (file) dataToSend.append("dokumen", file);
     try { if (formData.id) await updatePembelian(formData.id, dataToSend); else await addPembelian(dataToSend); await loadData(); setIsDialogOpen(false); resetFormPembelian(); alert("Berhasil simpan pembelian!") } catch (error) { alert("Gagal simpan pembelian") }
   }
+
   const handleSavePemakaian = async () => {
-    const dataToSend = new FormData(); dataToSend.append("tanggal", formPemakaian.tanggal); dataToSend.append("nama", formPemakaian.nama); dataToSend.append("kegiatan", formPemakaian.kegiatan); dataToSend.append("barang", formPemakaian.barang); dataToSend.append("jumlah", formPemakaian.jumlah); if (filePemakaian) dataToSend.append("dokumen", filePemakaian);
+    const dataToSend = new FormData(); dataToSend.append("noBukti", formPemakaian.noBukti); dataToSend.append("tanggal", formPemakaian.tanggal); dataToSend.append("nama", formPemakaian.nama); dataToSend.append("kegiatan", formPemakaian.kegiatan); dataToSend.append("barang", formPemakaian.barang); dataToSend.append("jumlah", formPemakaian.jumlah); if (filePemakaian) dataToSend.append("dokumen", filePemakaian);
     try { if (formPemakaian.id) await updatePemakaian(formPemakaian.id, dataToSend); else await addPemakaian(dataToSend); await loadData(); setIsDialogPemakaianOpen(false); resetFormPemakaian(); alert("Berhasil simpan pemakaian!") } catch (error) { alert("Gagal simpan pemakaian") }
   }
+
   const handleSaveTransfer = async () => {
     if(!formTransfer.tujuan) return alert("Pilih Tujuan Kab/Kota terlebih dahulu!");
-    const dataToSend = new FormData(); dataToSend.append("noBast", formTransfer.noBast); dataToSend.append("tanggal", formTransfer.tanggal); dataToSend.append("tujuan", formTransfer.tujuan); dataToSend.append("barang", formTransfer.barang); dataToSend.append("jumlah", formTransfer.jumlah); dataToSend.append("status", formTransfer.status); if (fileTransfer) dataToSend.append("dokumen", fileTransfer)
-    try { if (formTransfer.id) await updateTransferKeluar(formTransfer.id, dataToSend); else await addTransferKeluar(dataToSend); await loadData(); setIsDialogTransferOpen(false); resetFormTransfer(); alert("Berhasil simpan transfer keluar!") } catch (error) { alert("Gagal simpan transfer") }
+    const dataToSend = new FormData();
+    dataToSend.append("noBast", formTransfer.noBast);
+    dataToSend.append("tanggal", formTransfer.tanggal);
+    dataToSend.append("tujuan", formTransfer.tujuan);
+    dataToSend.append("status", formTransfer.status);
+    if (fileTransfer) dataToSend.append("dokumen", fileTransfer);
+
+    if (formTransfer.id) {
+      // Jika mode Edit (Update tunggal)
+      dataToSend.append("barang", formTransfer.barang);
+      dataToSend.append("jumlah", formTransfer.jumlah);
+      try { await updateTransferKeluar(formTransfer.id, dataToSend); } catch(e) { return alert("Gagal update transfer!"); }
+    } else {
+      // Jika mode Tambah (Multi item array)
+      if (transferItems.length === 0) return alert("Pilih minimal 1 barang yang akan dikirim!");
+      if (transferItems.some(i => !i.jumlah || parseInt(i.jumlah) <= 0)) return alert("Pastikan semua barang yang dicentang memiliki jumlah yang valid!");
+      dataToSend.append("items", JSON.stringify(transferItems));
+      try { await addTransferKeluar(dataToSend); } catch(e) { return alert("Gagal simpan transfer!"); }
+    }
+
+    await loadData(); setIsDialogTransferOpen(false); resetFormTransfer(); alert("Berhasil simpan transfer keluar!")
   }
+
   const handleSaveMasuk = async () => {
     const dataToSend = new FormData(); dataToSend.append("noBast", formMasuk.noBast); dataToSend.append("tanggal", formMasuk.tanggal); dataToSend.append("pengirim", formMasuk.pengirim); dataToSend.append("barang", formMasuk.barang); dataToSend.append("jumlah", formMasuk.jumlah); if (fileMasuk) dataToSend.append("dokumen", fileMasuk)
     try { if (formMasuk.id) await updateTransferMasuk(formMasuk.id, dataToSend); else await addTransferMasuk(dataToSend); await loadData(); setIsDialogMasukOpen(false); resetFormMasuk(); alert("Berhasil simpan penerimaan barang!") } catch (error) { alert("Gagal simpan transfer masuk") }
@@ -231,7 +250,6 @@ export default function MonevApp() {
           {/* MENU DASHBOARD */}
           {activeMenu === "dashboard" && (
             <div className="space-y-6">
-              {/* Judul tidak sticky lagi */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <h2 className="text-xl sm:text-2xl font-bold text-[#2C415C]">Dashboard Visualisasi Logistik</h2>
                 <p className="text-sm sm:text-base text-slate-500 mt-1">Angka dan diagram ter-update otomatis menyesuaikan jenis barang yang diinput.</p>
@@ -293,7 +311,8 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Meteran, Rompi, Stiker..." value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Jumlah Barang</Label><Input type="number" value={formData.jumlah} onChange={(e) => setFormData({...formData, jumlah: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Penyedia</Label><Input value={formData.penyedia} onChange={(e) => setFormData({...formData, penyedia: e.target.value})} /></div>
-                      <div className="grid gap-2"><Label>Dokumen BAST (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
+                      {/* Nama Label Dokumen Pengadaan */}
+                      <div className="grid gap-2"><Label>Dokumen Pengadaan (PDF)</Label><Input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
                     </div>
                     <DialogFooter><Button onClick={handleSavePembelian} className="bg-[#D48B10] hover:bg-[#b0730d] text-white w-full">Simpan</Button></DialogFooter>
                   </DialogContent>
@@ -308,14 +327,15 @@ export default function MonevApp() {
                       <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('barang')}><div className="flex items-center">Nama Barang {getSortIcon('barang')}</div></TableHead>
                       <TableHead className="py-4 bg-slate-100">Jumlah</TableHead>
                       <TableHead className="py-4 bg-slate-100">Penyedia</TableHead>
-                      <TableHead className="text-center py-4 bg-slate-100">Dokumen</TableHead>
+                      <TableHead className="text-center py-4 bg-slate-100">Dok. Pengadaan</TableHead>
                       <TableHead className="text-right px-6 py-4 bg-slate-100">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sortedPembelian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
-                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell><TableCell>{item.penyedia}</TableCell>
+                        {/* Satuan diubah jadi pcs */}
+                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} pcs</TableCell><TableCell>{item.penyedia}</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, barang: item.barang || "", jumlah: item.jumlah.toString(), penyedia: item.penyedia }); setIsDialogOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
@@ -339,6 +359,8 @@ export default function MonevApp() {
                   <DialogContent style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formPemakaian.id ? "Edit" : "Tambah"} Pemakaian</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
+                      {/* Field Baru: No Bukti */}
+                      <div className="grid gap-2"><Label>No Bukti (Bon)</Label><Input placeholder="Nomor Bukti Pengambilan" value={formPemakaian.noBukti} onChange={(e) => setFormPemakaian({...formPemakaian, noBukti: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Tanggal Pakai</Label><Input type="date" value={formPemakaian.tanggal} onChange={(e) => setFormPemakaian({...formPemakaian, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Pegawai</Label><Input value={formPemakaian.nama} onChange={(e) => setFormPemakaian({...formPemakaian, nama: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Keperluan</Label><Input value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
@@ -354,7 +376,8 @@ export default function MonevApp() {
                 <Table>
                   <TableHeader className="sticky top-0 z-20 bg-slate-100 shadow-sm border-b border-slate-200">
                     <TableRow>
-                      <TableHead className="px-6 py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tanggal')}><div className="flex items-center">Tanggal {getSortIcon('tanggal')}</div></TableHead>
+                      <TableHead className="px-6 py-4 bg-slate-100">No Bukti</TableHead>
+                      <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('tanggal')}><div className="flex items-center">Tanggal {getSortIcon('tanggal')}</div></TableHead>
                       <TableHead className="py-4 bg-slate-100">Nama Pegawai</TableHead>
                       <TableHead className="py-4 bg-slate-100 cursor-pointer hover:bg-slate-200/50 transition-colors" onClick={() => requestSort('barang')}><div className="flex items-center">Nama Barang {getSortIcon('barang')}</div></TableHead>
                       <TableHead className="py-4 bg-slate-100">Jumlah</TableHead>
@@ -365,10 +388,10 @@ export default function MonevApp() {
                   <TableBody>
                     {sortedPemakaian.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
-                        <TableCell className="px-6">{item.tanggal}</TableCell><TableCell className="font-medium text-slate-700">{item.nama}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
+                        <TableCell className="px-6 font-medium text-slate-700">{item.noBukti}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.nama}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} pcs</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
-                          <Button variant="outline" size="icon" onClick={() => { setFormPemakaian({ id: item.id, tanggal: item.tanggal, nama: item.nama, kegiatan: item.kegiatan, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogPemakaianOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
+                          <Button variant="outline" size="icon" onClick={() => { setFormPemakaian({ id: item.id, noBukti: item.noBukti || "", tanggal: item.tanggal, nama: item.nama, kegiatan: item.kegiatan, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogPemakaianOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
                           <Button variant="outline" size="icon" onClick={() => { if(confirm("Hapus?")) deletePemakaian(item.id).then(loadData) }}><Trash2 size={16} className="text-red-600" /></Button>
                         </TableCell>
                       </TableRow>
@@ -398,8 +421,53 @@ export default function MonevApp() {
                           {DAFTAR_KABKOTA.map((kab) => (<option key={kab} value={kab}>{kab}</option>))}
                         </select>
                       </div>
-                      <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Rompi" value={formTransfer.barang} onChange={(e) => setFormTransfer({...formTransfer, barang: e.target.value})} /></div>
-                      <div className="grid gap-2"><Label>Jumlah</Label><Input type="number" value={formTransfer.jumlah} onChange={(e) => setFormTransfer({...formTransfer, jumlah: e.target.value})} /></div>
+
+                      {/* LOGIKA CHECKBOX BATCH INPUT */}
+                      <div className="grid gap-2">
+                        <Label>Barang yang Dikirim</Label>
+                        {formTransfer.id ? (
+                          // Mode Edit: Hanya tampilkan barang dan jumlah 1 persatu
+                          <>
+                            <Input value={formTransfer.barang} disabled className="bg-slate-100 cursor-not-allowed" />
+                            <Input type="number" placeholder="Jumlah" value={formTransfer.jumlah} onChange={(e) => setFormTransfer({...formTransfer, jumlah: e.target.value})} />
+                          </>
+                        ) : (
+                          // Mode Tambah: Tampilkan checkbox dari barang yang ada
+                          <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-md p-3 space-y-3 bg-slate-50">
+                            {Array.from(uniqueBarangMap.values()).map((barangStr) => {
+                              const isChecked = transferItems.some(i => i.barang === barangStr);
+                              const currentItem = transferItems.find(i => i.barang === barangStr);
+                              return (
+                                <div key={barangStr as string} className="flex items-center gap-3 bg-white p-2 rounded border shadow-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 accent-[#D48B10]"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setTransferItems([...transferItems, { barang: barangStr as string, jumlah: "" }]);
+                                      else setTransferItems(transferItems.filter(i => i.barang !== barangStr));
+                                    }}
+                                  />
+                                  <Label className="flex-1 cursor-pointer">{barangStr as string}</Label>
+                                  {isChecked && (
+                                    <Input
+                                      type="number"
+                                      placeholder="Jumlah (pcs)"
+                                      className="w-28 h-8 text-sm"
+                                      value={currentItem?.jumlah || ""}
+                                      onChange={(e) => {
+                                        setTransferItems(transferItems.map(i => i.barang === barangStr ? { ...i, jumlah: e.target.value } : i));
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              )
+                            })}
+                            {uniqueBarangMap.size === 0 && <p className="text-xs text-slate-500 italic text-center">Belum ada barang di Data Pembelian</p>}
+                          </div>
+                        )}
+                      </div>
+
                       <div className="grid gap-2">
                         <Label>Status Pengiriman</Label>
                         <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950" value={formTransfer.status} onChange={(e) => setFormTransfer({...formTransfer, status: e.target.value})}>
@@ -430,7 +498,7 @@ export default function MonevApp() {
                   <TableBody>
                     {sortedTransfer.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
-                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.tujuan}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
+                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.tujuan}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} pcs</TableCell>
                         <TableCell className="text-center"><span className={`px-3 py-1 rounded-full text-xs font-semibold ${item.status === 'Diterima' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.status}</span></TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
@@ -482,7 +550,7 @@ export default function MonevApp() {
                   <TableBody>
                     {sortedMasuk.map((item) => (
                       <TableRow key={item.id} className="hover:bg-slate-50/50">
-                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.pengirim}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} Unit</TableCell>
+                        <TableCell className="px-6 font-medium text-slate-700">{item.noBast}</TableCell><TableCell>{item.tanggal}</TableCell><TableCell>{item.pengirim}</TableCell><TableCell>{item.barang}</TableCell><TableCell>{formatAngka(item.jumlah)} pcs</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-6 space-x-2">
                           <Button variant="outline" size="icon" onClick={() => { setFormMasuk({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, pengirim: item.pengirim, barang: item.barang, jumlah: item.jumlah.toString() }); setIsDialogMasukOpen(true); }}><Pencil size={16} className="text-amber-600" /></Button>
@@ -518,7 +586,7 @@ export default function MonevApp() {
   )
 
   function resetFormPembelian() { setFormData({ id: "", noBast: "", tanggal: "", barang: "", jumlah: "", penyedia: "" }); setFile(null); }
-  function resetFormPemakaian() { setFormPemakaian({ id: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" }); setFilePemakaian(null); }
-  function resetFormTransfer() { setFormTransfer({ id: "", noBast: "", tanggal: "", tujuan: "", barang: "", jumlah: "", status: "Dikirim" }); setFileTransfer(null); }
+  function resetFormPemakaian() { setFormPemakaian({ id: "", noBukti: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" }); setFilePemakaian(null); }
+  function resetFormTransfer() { setFormTransfer({ id: "", noBast: "", tanggal: "", tujuan: "", barang: "", jumlah: "", status: "Dikirim" }); setTransferItems([]); setFileTransfer(null); }
   function resetFormMasuk() { setFormMasuk({ id: "", noBast: "", tanggal: "", pengirim: "BPS Provinsi Aceh", barang: "", jumlah: "" }); setFileMasuk(null); }
 }
