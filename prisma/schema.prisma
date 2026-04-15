@@ -8,14 +8,17 @@ datasource db {
 }
 
 model Pembelian {
-  id        String   @id @default(cuid())
-  noBast    String
-  tanggal   String
-  barang    String?
-  jumlah    Int
-  penyedia  String
-  dokumen   String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  noBast      String
+  tanggal     String
+  barang      String?
+  jumlah      Int      // Total keseluruhan
+  baik        Int      @default(0) // Kualitas Baik
+  rusakRingan Int      @default(0) // Kualitas Rusak Ringan
+  rusakBerat  Int      @default(0) // Kualitas Rusak Berat
+  penyedia    String
+  dokumen     String?
+  createdAt   DateTime @default(now())
 }
 
 model Pemakaian {

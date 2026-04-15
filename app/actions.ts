@@ -11,14 +11,47 @@ export async function getPembelian() { noStore(); return await prisma.pembelian.
 export async function addPembelian(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
-  await prisma.pembelian.create({ data: { noBast: formData.get("noBast") as string, tanggal: formData.get("tanggal") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string), penyedia: formData.get("penyedia") as string, dokumen: urlFile } })
+
+  const baik = parseInt(formData.get("baik") as string) || 0;
+  const rusakRingan = parseInt(formData.get("rusakRingan") as string) || 0;
+  const rusakBerat = parseInt(formData.get("rusakBerat") as string) || 0;
+  const totalJumlah = baik + rusakRingan + rusakBerat;
+
+  await prisma.pembelian.create({
+    data: {
+      noBast: formData.get("noBast") as string,
+      tanggal: formData.get("tanggal") as string,
+      barang: formData.get("barang") as string,
+      jumlah: totalJumlah,
+      baik: baik,
+      rusakRingan: rusakRingan,
+      rusakBerat: rusakBerat,
+      penyedia: formData.get("penyedia") as string,
+      dokumen: urlFile
+    }
+  })
   revalidatePath("/")
 }
 export async function deletePembelian(id: string) { await prisma.pembelian.delete({ where: { id } }); revalidatePath("/") }
 export async function updatePembelian(id: string, formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
-  const dataToUpdate: any = { noBast: formData.get("noBast") as string, tanggal: formData.get("tanggal") as string, barang: formData.get("barang") as string, jumlah: parseInt(formData.get("jumlah") as string), penyedia: formData.get("penyedia") as string };
+
+  const baik = parseInt(formData.get("baik") as string) || 0;
+  const rusakRingan = parseInt(formData.get("rusakRingan") as string) || 0;
+  const rusakBerat = parseInt(formData.get("rusakBerat") as string) || 0;
+  const totalJumlah = baik + rusakRingan + rusakBerat;
+
+  const dataToUpdate: any = {
+    noBast: formData.get("noBast") as string,
+    tanggal: formData.get("tanggal") as string,
+    barang: formData.get("barang") as string,
+    jumlah: totalJumlah,
+    baik: baik,
+    rusakRingan: rusakRingan,
+    rusakBerat: rusakBerat,
+    penyedia: formData.get("penyedia") as string
+  };
   if (urlFile) dataToUpdate.dokumen = urlFile;
   await prisma.pembelian.update({ where: { id }, data: dataToUpdate })
   revalidatePath("/")
@@ -30,7 +63,6 @@ export async function addPemakaian(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
 
-  // Tangkap string JSON dari frontend (Multi-item pemakaian)
   const itemsStr = formData.get("items") as string;
   if (itemsStr) {
     const items = JSON.parse(itemsStr);
@@ -63,7 +95,6 @@ export async function addTransferKeluar(formData: FormData) {
   const file = formData.get("dokumen") as File; let urlFile = "";
   if (file && file.size > 0) { const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true }); urlFile = blob.url; }
 
-  // Tangkap string JSON dari frontend (Multi-item distribusi)
   const itemsStr = formData.get("items") as string;
   if (itemsStr) {
     const items = JSON.parse(itemsStr);
