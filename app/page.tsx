@@ -29,7 +29,8 @@ const DAFTAR_KABKOTA = [
   "Kota Langsa", "Kota Lhokseumawe", "Kota Subulussalam"
 ];
 
-const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
+const CHART_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6', '#0ea5e9', '#6366f1', '#d946ef'];
+
 const formatAngka = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
 const modernFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif";
 
@@ -262,38 +263,54 @@ export default function MonevApp() {
   return (
     <div className="flex h-screen bg-[#D9D9D9] text-slate-800 overflow-hidden" style={{ fontFamily: modernFont }}>
 
+      {/* OVERLAY MOBILE UNTUK SIDEBAR */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 sm:hidden transition-opacity" onClick={() => setIsSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 bg-black/50 z-40 sm:hidden transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"} sm:relative sm:translate-x-0 sm:flex sm:w-64 bg-white border-r border-slate-200 transition-transform duration-300 flex-col shadow-xl sm:shadow-sm`}>
-        <div className="p-4 border-b h-20 flex items-center justify-between sm:justify-center gap-3">
+      {/* SIDEBAR RESPONSIF - BISA MELIPAT JADI KECIL DI DESKTOP */}
+      <aside className={`fixed inset-y-0 left-0 z-50 transform transition-all duration-300 flex flex-col shadow-xl sm:shadow-sm bg-white border-r border-slate-200
+        ${isSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64 sm:translate-x-0 sm:w-20"}
+        sm:relative`}
+      >
+        <div className={`p-4 border-b h-20 flex items-center ${isSidebarOpen ? "justify-between sm:justify-center" : "justify-center"} gap-3`}>
           <div className="flex items-center gap-3">
             <div className="bg-[#D48B10] p-2 rounded-lg text-white shrink-0"><LayoutDashboard size={20} /></div>
-            <span className="font-bold text-[#2C415C] whitespace-nowrap tracking-wide">MONEV-SE</span>
+            {isSidebarOpen && <span className="font-bold text-[#2C415C] whitespace-nowrap tracking-wide">MONEV-SE</span>}
           </div>
-          <button className="sm:hidden text-slate-500 hover:text-slate-800" onClick={() => setIsSidebarOpen(false)}><X size={24} /></button>
+          <button className="sm:hidden text-slate-500 hover:text-slate-800" onClick={() => setIsSidebarOpen(false)}>
+            <X size={24} />
+          </button>
         </div>
         <div className="flex-1 py-4 px-3 flex flex-col gap-2 overflow-y-auto">
-          <button onClick={() => setActiveMenu("dashboard")} className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "dashboard" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
-            <div className="min-w-5"><PieChartIcon size={20} /></div><span className="ml-3 font-medium whitespace-nowrap">Dashboard</span>
+          <button onClick={() => setActiveMenu("dashboard")} title="Dashboard" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "dashboard" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"} ${isSidebarOpen ? "justify-start" : "justify-center"}`}>
+            <PieChartIcon size={20} className="shrink-0" />
+            {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap">Dashboard</span>}
           </button>
-          <button onClick={() => setActiveMenu("pembelian")} className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pembelian" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
-            <div className="min-w-5"><ShoppingCart size={20} /></div><span className="ml-3 font-medium whitespace-nowrap">Pembelian</span>
+          <button onClick={() => setActiveMenu("pembelian")} title="Pembelian" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pembelian" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"} ${isSidebarOpen ? "justify-start" : "justify-center"}`}>
+            <ShoppingCart size={20} className="shrink-0" />
+            {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap">Pembelian</span>}
           </button>
-          <button onClick={() => setActiveMenu("pemakaian")} className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pemakaian" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
-            <div className="min-w-5"><PackageMinus size={20} /></div><span className="ml-3 font-medium whitespace-nowrap">Pemakaian Internal</span>
+          <button onClick={() => setActiveMenu("pemakaian")} title="Pemakaian Internal" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "pemakaian" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"} ${isSidebarOpen ? "justify-start" : "justify-center"}`}>
+            <PackageMinus size={20} className="shrink-0" />
+            {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap">Pemakaian Internal</span>}
           </button>
-          <button onClick={() => setActiveMenu("transfer")} className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "transfer" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
-            <div className="min-w-5"><ArrowUpFromLine size={20} /></div><span className="ml-3 font-medium whitespace-nowrap">Transfer Keluar</span>
+          <button onClick={() => setActiveMenu("transfer")} title="Transfer Keluar" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "transfer" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"} ${isSidebarOpen ? "justify-start" : "justify-center"}`}>
+            <ArrowUpFromLine size={20} className="shrink-0" />
+            {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap">Transfer Keluar</span>}
           </button>
-          <button onClick={() => setActiveMenu("masuk")} className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "masuk" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
-            <div className="min-w-5"><ArrowDownToLine size={20} /></div><span className="ml-3 font-medium whitespace-nowrap">Transfer Masuk</span>
+          <button onClick={() => setActiveMenu("masuk")} title="Transfer Masuk" className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "masuk" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"} ${isSidebarOpen ? "justify-start" : "justify-center"}`}>
+            <ArrowDownToLine size={20} className="shrink-0" />
+            {isSidebarOpen && <span className="ml-3 font-medium whitespace-nowrap">Transfer Masuk</span>}
           </button>
         </div>
         <div className="p-4 border-t">
-          <button onClick={handleLogout} className="flex items-center text-red-500 gap-3 p-2 w-full hover:bg-red-50 rounded-lg transition-colors">
-            <div className="min-w-5"><LogOut size={20} /></div><span className="whitespace-nowrap font-medium">Keluar</span>
+          <button onClick={handleLogout} title="Keluar" className={`flex items-center text-red-500 p-2 w-full hover:bg-red-50 rounded-lg transition-colors ${isSidebarOpen ? "justify-start gap-3" : "justify-center"}`}>
+            <LogOut size={20} className="shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap font-medium">Keluar</span>}
           </button>
         </div>
       </aside>
@@ -301,7 +318,10 @@ export default function MonevApp() {
       <main className="flex-1 flex flex-col overflow-hidden relative w-full">
         <header className="h-16 sm:h-20 bg-white shadow-sm border-b flex items-center px-4 sm:px-6 justify-between z-20 shrink-0">
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 rounded-md hover:bg-slate-100 text-slate-600 sm:hidden transition-colors"><Menu size={24} /></button>
+            {/* Tombol menu sekarang selalu muncul, dan melakukan toggle */}
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 -ml-2 rounded-md hover:bg-slate-100 text-slate-600 transition-colors">
+              <Menu size={24} />
+            </button>
             <h1 className="text-lg sm:text-xl font-bold text-[#2C415C] tracking-wide">BPS PROVINSI ACEH</h1>
           </div>
           <div className="flex items-center gap-2 text-xs sm:text-sm bg-slate-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium text-[#2C415C]"><User size={16} /> <span className="hidden sm:inline">Admin</span></div>
@@ -335,7 +355,7 @@ export default function MonevApp() {
 
                     return (
                       <Card key={index} className="shadow-sm border-none rounded-xl">
-                        <CardHeader className="pb-2">
+                        <CardHeader className="pb-0">
                           <CardTitle className="text-lg truncate text-[#2C415C]" title={stat.name}>{stat.name}</CardTitle>
                           <div className="flex flex-col gap-0.5 mt-1 border-b border-slate-100 pb-3">
                             <p className="text-xs sm:text-sm text-slate-500 flex justify-between">
@@ -348,11 +368,8 @@ export default function MonevApp() {
                             </p>
                           </div>
                         </CardHeader>
-                        {/* Tata Letak Diagram dan Keterangan Bersebelahan */}
                         <CardContent className="pt-4 pb-6">
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-
-                            {/* Sisi Kiri: Diagram Donat */}
                             <div className="h-40 w-full sm:w-1/2">
                               <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -372,7 +389,6 @@ export default function MonevApp() {
                               </ResponsiveContainer>
                             </div>
 
-                            {/* Sisi Kanan: Keterangan (Legend Custom) Mengisi Space Kosong */}
                             <div className="w-full sm:w-1/2 flex flex-col justify-center gap-3">
                               {chartData.map((d, i) => (
                                 <div key={i} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
@@ -701,6 +717,7 @@ export default function MonevApp() {
         </div>
       </main>
 
+      {/* VIEW DOKUMEN MODAL */}
       <Dialog open={!!viewDocument} onOpenChange={() => setViewDocument(null)}>
         <DialogContent className="sm:max-w-[425px] w-[90vw]" style={{ fontFamily: modernFont }}>
           <DialogHeader><DialogTitle>Pratinjau Dokumen</DialogTitle></DialogHeader>
