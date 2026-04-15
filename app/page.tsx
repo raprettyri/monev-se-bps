@@ -47,8 +47,7 @@ export default function MonevApp() {
   // --- States CRUD ---
   const [dataPembelian, setDataPembelian] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  // State Pembelian sudah tidak ada "jumlah"
-  const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", barang: "", baik: "", rusakRingan: "", rusakBerat: "", penyedia: "" })
+  const [formData, setFormData] = useState({ id: "", noBast: "", tanggal: "", barang: "", penyedia: "", baik: "", rusakRingan: "", rusakBerat: "" })
 
   const [chkBaik, setCheckBaik] = useState(false);
   const [chkRR, setCheckRR] = useState(false);
@@ -263,6 +262,7 @@ export default function MonevApp() {
   return (
     <div className="flex h-screen bg-[#D9D9D9] text-slate-800 overflow-hidden" style={{ fontFamily: modernFont }}>
 
+      {/* OVERLAY MOBILE UNTUK SIDEBAR */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 sm:hidden transition-opacity"
@@ -320,7 +320,7 @@ export default function MonevApp() {
             <div className="space-y-4 sm:space-y-6">
               <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
                 <h2 className="text-xl sm:text-2xl font-bold text-[#2C415C]">Dashboard Kualitas Logistik</h2>
-                <p className="text-sm sm:text-base text-slate-500 mt-1">Diagram otomatis memisahkan barang berdasarkan kondisi kualitas saat diterima.</p>
+                <p className="text-sm sm:text-base text-slate-500 mt-1">Diagram otomatis memisahkan barang berdasarkan kondisi kualitas di gudang Provinsi.</p>
               </div>
 
               {dynamicStats.length === 0 ? (
@@ -333,8 +333,8 @@ export default function MonevApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 pb-8">
                   {dynamicStats.map((stat, index) => {
                     const colorUtama = CHART_COLORS[index % CHART_COLORS.length];
+                    // Terdistribusi dihilangkan dari chartData, paddingAngle dihapus
                     const chartData = [
-                      { name: 'Terdistribusi', value: stat.keluar, color: '#e2e8f0' },
                       { name: 'Sisa Baik', value: stat.sisaBaik, color: colorUtama },
                       { name: 'Rusak Ringan', value: stat.sisaRR, color: '#f59e0b' },
                       { name: 'Rusak Berat', value: stat.sisaRB, color: '#ef4444' }
@@ -344,13 +344,23 @@ export default function MonevApp() {
                       <Card key={index} className="shadow-sm border-none rounded-xl">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg truncate text-[#2C415C]" title={stat.name}>{stat.name}</CardTitle>
-                          <p className="text-xs sm:text-sm text-slate-500">Total Stok Pengadaan: <b className="text-slate-700">{formatAngka(stat.masuk)} pcs</b></p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <p className="text-xs sm:text-sm text-slate-500 flex justify-between">
+                              <span>Total Pengadaan:</span>
+                              <b className="text-slate-700">{formatAngka(stat.masuk)} pcs</b>
+                            </p>
+                            <p className="text-xs sm:text-sm text-slate-500 flex justify-between">
+                              <span>Telah Didistribusi/Dipakai:</span>
+                              <b className="text-slate-700">{formatAngka(stat.keluar)} pcs</b>
+                            </p>
+                          </div>
                         </CardHeader>
                         <CardContent className="flex flex-col items-center">
                           <div className="h-56 sm:h-64 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
-                                <Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2} dataKey="value">
+                                {/* paddingAngle dihapus agar potongan kecil tidak termakan spasi putih */}
+                                <Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value">
                                   {chartData.map((entry, idx) => (<Cell key={`cell-${idx}`} fill={entry.color} />))}
                                 </Pie>
                                 <Tooltip formatter={(value) => formatAngka(value as number)} />
@@ -381,6 +391,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Tanggal BAST</Label><Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Meteran, Rompi, Stiker..." value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
 
+                      {/* Ceklis Kualitas */}
                       <div className="grid gap-2">
                         <Label className="text-[#D48B10] font-semibold">Kondisi & Jumlah Barang (pcs)</Label>
                         <div className="flex flex-col gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
@@ -436,18 +447,8 @@ export default function MonevApp() {
                         <TableCell className="text-center text-red-600">{formatAngka(item.rusakBerat)}</TableCell>
                         <TableCell className="text-center"><Button variant="ghost" size="sm" onClick={() => setViewDocument(item)}><FileText size={16} className="text-[#D48B10]" /></Button></TableCell>
                         <TableCell className="text-right px-4 space-x-2 whitespace-nowrap">
-                          {/* Kode Edit yang diperbaiki: Tidak ada lagi properti 'jumlah' di sini */}
                           <Button variant="outline" size="icon" onClick={() => {
-                            setFormData({
-                              id: item.id,
-                              noBast: item.noBast,
-                              tanggal: item.tanggal,
-                              barang: item.barang || "",
-                              penyedia: item.penyedia,
-                              baik: item.baik.toString(),
-                              rusakRingan: item.rusakRingan.toString(),
-                              rusakBerat: item.rusakBerat.toString()
-                            });
+                            setFormData({ id: item.id, noBast: item.noBast, tanggal: item.tanggal, barang: item.barang || "", penyedia: item.penyedia, baik: item.baik.toString(), rusakRingan: item.rusakRingan.toString(), rusakBerat: item.rusakBerat.toString() });
                             setCheckBaik(item.baik > 0); setCheckRR(item.rusakRingan > 0); setCheckRB(item.rusakBerat > 0);
                             setIsDialogOpen(true);
                           }}><Pencil size={16} className="text-amber-600" /></Button>
@@ -477,7 +478,7 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Keperluan</Label><Input value={formPemakaian.kegiatan} onChange={(e) => setFormPemakaian({...formPemakaian, kegiatan: e.target.value})} /></div>
 
                       <div className="grid gap-2">
-                        <Label className="text-[#D48B10] font-semibold">Pilih Barang yang Dipakai (Kualitas Baik)</Label>
+                        <Label className="text-[#D48B10] font-semibold">Pilih Barang yang Dipakai (Stok Baik)</Label>
                         {formPemakaian.id ? (
                           <div className="flex gap-2">
                             <Input value={formPemakaian.barang} disabled className="bg-slate-100 flex-1" />
@@ -558,7 +559,7 @@ export default function MonevApp() {
                       </div>
 
                       <div className="grid gap-2">
-                        <Label className="text-[#D48B10] font-semibold">Pilih Barang yang Dikirim (Kualitas Baik)</Label>
+                        <Label className="text-[#D48B10] font-semibold">Pilih Barang yang Dikirim (Stok Baik)</Label>
                         {formTransfer.id ? (
                           <div className="flex gap-2">
                             <Input value={formTransfer.barang} disabled className="bg-slate-100 flex-1" />
@@ -635,7 +636,7 @@ export default function MonevApp() {
                 <div><CardTitle className="text-base sm:text-xl text-[#2C415C]">Penerimaan Sah (Transfer Masuk)</CardTitle></div>
                 <Dialog open={isDialogMasukOpen} onOpenChange={(open) => { setIsDialogMasukOpen(open); if(!open) resetFormMasuk(); }}>
                   <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md text-xs sm:text-sm h-8 sm:h-10">+ Tambah</Button></DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]" style={{ fontFamily: modernFont }}>
+                  <DialogContent className="sm:max-w-[425px] h-[90vh] sm:h-auto overflow-y-auto" style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formMasuk.id ? "Edit" : "Tambah"} Penerimaan Daerah</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST Resmi</Label><Input value={formMasuk.noBast} onChange={(e) => setFormMasuk({...formMasuk, noBast: e.target.value})} /></div>
@@ -701,7 +702,6 @@ export default function MonevApp() {
     </div>
   )
 
-  // Pastikan Reset Form juga menghapus property 'jumlah' di awal
   function resetFormPembelian() { setFormData({ id: "", noBast: "", tanggal: "", barang: "", penyedia: "", baik: "", rusakRingan: "", rusakBerat: "" }); setCheckBaik(false); setCheckRR(false); setCheckRB(false); setFile(null); }
   function resetFormPemakaian() { setFormPemakaian({ id: "", noBukti: "", tanggal: "", nama: "", kegiatan: "", barang: "", jumlah: "" }); setPemakaianItems([]); setFilePemakaian(null); }
   function resetFormTransfer() { setFormTransfer({ id: "", noBast: "", tanggal: "", tujuan: "", barang: "", jumlah: "", status: "Dikirim" }); setTransferItems([]); setFileTransfer(null); }
