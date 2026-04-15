@@ -262,12 +262,8 @@ export default function MonevApp() {
   return (
     <div className="flex h-screen bg-[#D9D9D9] text-slate-800 overflow-hidden" style={{ fontFamily: modernFont }}>
 
-      {/* OVERLAY MOBILE UNTUK SIDEBAR */}
       {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 sm:hidden transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 sm:hidden transition-opacity" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       <aside className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"} sm:relative sm:translate-x-0 sm:flex sm:w-64 bg-white border-r border-slate-200 transition-transform duration-300 flex-col shadow-xl sm:shadow-sm`}>
@@ -276,9 +272,7 @@ export default function MonevApp() {
             <div className="bg-[#D48B10] p-2 rounded-lg text-white shrink-0"><LayoutDashboard size={20} /></div>
             <span className="font-bold text-[#2C415C] whitespace-nowrap tracking-wide">MONEV-SE</span>
           </div>
-          <button className="sm:hidden text-slate-500 hover:text-slate-800" onClick={() => setIsSidebarOpen(false)}>
-            <X size={24} />
-          </button>
+          <button className="sm:hidden text-slate-500 hover:text-slate-800" onClick={() => setIsSidebarOpen(false)}><X size={24} /></button>
         </div>
         <div className="flex-1 py-4 px-3 flex flex-col gap-2 overflow-y-auto">
           <button onClick={() => setActiveMenu("dashboard")} className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeMenu === "dashboard" ? "bg-[#D48B10] text-white shadow-md" : "text-slate-500 hover:bg-slate-100"}`}>
@@ -335,13 +329,13 @@ export default function MonevApp() {
                     const colorUtama = CHART_COLORS[index % CHART_COLORS.length];
                     const chartData = [
                       { name: 'Sisa Baik', value: stat.sisaBaik, color: colorUtama },
-                      { name: 'R. Ringan', value: stat.sisaRR, color: '#f59e0b' },
-                      { name: 'R. Berat', value: stat.sisaRB, color: '#ef4444' }
+                      { name: 'Rusak Ringan', value: stat.sisaRR, color: '#f59e0b' },
+                      { name: 'Rusak Berat', value: stat.sisaRB, color: '#ef4444' }
                     ].filter(d => d.value > 0);
 
                     return (
                       <Card key={index} className="shadow-sm border-none rounded-xl">
-                        <CardHeader className="pb-0">
+                        <CardHeader className="pb-2">
                           <CardTitle className="text-lg truncate text-[#2C415C]" title={stat.name}>{stat.name}</CardTitle>
                           <div className="flex flex-col gap-0.5 mt-1 border-b border-slate-100 pb-3">
                             <p className="text-xs sm:text-sm text-slate-500 flex justify-between">
@@ -354,26 +348,43 @@ export default function MonevApp() {
                             </p>
                           </div>
                         </CardHeader>
-                        <CardContent className="flex flex-col items-center pt-2">
-                          <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={chartData}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={40}
-                                  outerRadius={65}
-                                  dataKey="value"
-                                  labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
-                                  label={({ name, value }) => `${name}: ${formatAngka(value)}`}
-                                  style={{ fontSize: '11px', fontWeight: 500 }}
-                                >
-                                  {chartData.map((entry, idx) => (<Cell key={`cell-${idx}`} fill={entry.color} />))}
-                                </Pie>
-                                <Tooltip formatter={(value) => formatAngka(value as number)} />
-                              </PieChart>
-                            </ResponsiveContainer>
+                        {/* Tata Letak Diagram dan Keterangan Bersebelahan */}
+                        <CardContent className="pt-4 pb-6">
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+                            {/* Sisi Kiri: Diagram Donat */}
+                            <div className="h-40 w-full sm:w-1/2">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={40}
+                                    outerRadius={70}
+                                    dataKey="value"
+                                    stroke="none"
+                                  >
+                                    {chartData.map((entry, idx) => (<Cell key={`cell-${idx}`} fill={entry.color} />))}
+                                  </Pie>
+                                  <Tooltip formatter={(value) => formatAngka(value as number)} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            {/* Sisi Kanan: Keterangan (Legend Custom) Mengisi Space Kosong */}
+                            <div className="w-full sm:w-1/2 flex flex-col justify-center gap-3">
+                              {chartData.map((d, i) => (
+                                <div key={i} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: d.color }}></div>
+                                    <span className="text-xs font-medium text-slate-600">{d.name}</span>
+                                  </div>
+                                  <span className="text-sm font-bold" style={{ color: d.color }}>{formatAngka(d.value)}</span>
+                                </div>
+                              ))}
+                            </div>
+
                           </div>
                         </CardContent>
                       </Card>
@@ -690,7 +701,6 @@ export default function MonevApp() {
         </div>
       </main>
 
-      {/* VIEW DOKUMEN MODAL */}
       <Dialog open={!!viewDocument} onOpenChange={() => setViewDocument(null)}>
         <DialogContent className="sm:max-w-[425px] w-[90vw]" style={{ fontFamily: modernFont }}>
           <DialogHeader><DialogTitle>Pratinjau Dokumen</DialogTitle></DialogHeader>
