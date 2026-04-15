@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 
 const DAFTAR_KABKOTA = [
   "Simeulue", "Aceh Singkil", "Aceh Selatan", "Aceh Tenggara", "Aceh Timur",
@@ -333,18 +333,17 @@ export default function MonevApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 pb-8">
                   {dynamicStats.map((stat, index) => {
                     const colorUtama = CHART_COLORS[index % CHART_COLORS.length];
-                    // Terdistribusi dihilangkan dari chartData, paddingAngle dihapus
                     const chartData = [
                       { name: 'Sisa Baik', value: stat.sisaBaik, color: colorUtama },
-                      { name: 'Rusak Ringan', value: stat.sisaRR, color: '#f59e0b' },
-                      { name: 'Rusak Berat', value: stat.sisaRB, color: '#ef4444' }
+                      { name: 'R. Ringan', value: stat.sisaRR, color: '#f59e0b' },
+                      { name: 'R. Berat', value: stat.sisaRB, color: '#ef4444' }
                     ].filter(d => d.value > 0);
 
                     return (
                       <Card key={index} className="shadow-sm border-none rounded-xl">
-                        <CardHeader className="pb-2">
+                        <CardHeader className="pb-0">
                           <CardTitle className="text-lg truncate text-[#2C415C]" title={stat.name}>{stat.name}</CardTitle>
-                          <div className="flex flex-col gap-0.5 mt-1">
+                          <div className="flex flex-col gap-0.5 mt-1 border-b border-slate-100 pb-3">
                             <p className="text-xs sm:text-sm text-slate-500 flex justify-between">
                               <span>Total Pengadaan:</span>
                               <b className="text-slate-700">{formatAngka(stat.masuk)} pcs</b>
@@ -355,16 +354,24 @@ export default function MonevApp() {
                             </p>
                           </div>
                         </CardHeader>
-                        <CardContent className="flex flex-col items-center">
-                          <div className="h-56 sm:h-64 w-full">
+                        <CardContent className="flex flex-col items-center pt-2">
+                          <div className="h-64 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
-                                {/* paddingAngle dihapus agar potongan kecil tidak termakan spasi putih */}
-                                <Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value">
+                                <Pie
+                                  data={chartData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={40}
+                                  outerRadius={65}
+                                  dataKey="value"
+                                  labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                                  label={({ name, value }) => `${name}: ${formatAngka(value)}`}
+                                  style={{ fontSize: '11px', fontWeight: 500 }}
+                                >
                                   {chartData.map((entry, idx) => (<Cell key={`cell-${idx}`} fill={entry.color} />))}
                                 </Pie>
                                 <Tooltip formatter={(value) => formatAngka(value as number)} />
-                                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }}/>
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
@@ -391,7 +398,6 @@ export default function MonevApp() {
                       <div className="grid gap-2"><Label>Tanggal BAST</Label><Input type="date" value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} /></div>
                       <div className="grid gap-2"><Label>Nama Barang</Label><Input placeholder="Contoh: Meteran, Rompi, Stiker..." value={formData.barang} onChange={(e) => setFormData({...formData, barang: e.target.value})} /></div>
 
-                      {/* Ceklis Kualitas */}
                       <div className="grid gap-2">
                         <Label className="text-[#D48B10] font-semibold">Kondisi & Jumlah Barang (pcs)</Label>
                         <div className="flex flex-col gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
@@ -636,7 +642,7 @@ export default function MonevApp() {
                 <div><CardTitle className="text-base sm:text-xl text-[#2C415C]">Penerimaan Sah (Transfer Masuk)</CardTitle></div>
                 <Dialog open={isDialogMasukOpen} onOpenChange={(open) => { setIsDialogMasukOpen(open); if(!open) resetFormMasuk(); }}>
                   <DialogTrigger asChild><Button className="bg-[#D48B10] hover:bg-[#b0730d] text-white shadow-md text-xs sm:text-sm h-8 sm:h-10">+ Tambah</Button></DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] h-[90vh] sm:h-auto overflow-y-auto" style={{ fontFamily: modernFont }}>
+                  <DialogContent className="sm:max-w-[425px]" style={{ fontFamily: modernFont }}>
                     <DialogHeader><DialogTitle>{formMasuk.id ? "Edit" : "Tambah"} Penerimaan Daerah</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2"><Label>No BAST Resmi</Label><Input value={formMasuk.noBast} onChange={(e) => setFormMasuk({...formMasuk, noBast: e.target.value})} /></div>
